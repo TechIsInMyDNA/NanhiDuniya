@@ -10,7 +10,8 @@ from TV import (
     add_profile_milestone,
     get_profile_milestones,
     export_single_profile_backup,
-    import_single_profile_backup
+    import_single_profile_backup,
+    delete_profile_vault
 )
 
 init_db()
@@ -23,29 +24,30 @@ HTML_PAGE = """<!DOCTYPE html>
   <title>Nanhi Duniya - Vedic Kundli & Baby Milestone Vault</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Rozha+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Cinzel:wght@700&family=Rozha+One&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FAF7F2; }
-    .glass-card { background: rgba(255, 255, 255, 0.96); border: 1px solid #EFEAE1; }
+    .glass-card { background: rgba(255, 255, 255, 0.98); border: 1px solid #EFEAE1; }
     .kundli-box { position: relative; width: 280px; height: 280px; margin: 0 auto; background: #FFFDF9; border: 2px solid #854D0E; }
     .kundli-svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
     .h-item { position: absolute; text-align: center; width: 64px; z-index: 10; transform: translate(-50%, -50%); }
     .rashi-no { color: #9A3412; font-size: 11px; font-weight: 800; display: block; line-height: 1; }
     .grah-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 2px; }
     .grah-badge { background: #EEF2FF; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 1px 3px; border-radius: 4px; border: 1px solid #DBEAFE; }
-    
+
+    /* ROYAL PRINT CANVAS (Exact A4 Fit without cut) */
     #pdfPrintCanvas {
-      width: 720px;
-      padding: 35px;
-      background: #FFFFFF;
+      width: 794px; /* Standard A4 pixel width at 96 DPI */
+      background: #FFFDF9;
       color: #1C1917;
-      border: 6px double #D97706;
+      padding: 36px;
       box-sizing: border-box;
+      border: 8px double #B45309;
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
   </style>
 </head>
-<body class="text-stone-800 pb-24">
+<body class="text-stone-800 pb-28">
 
   <!-- Header -->
   <header class="py-3 px-4 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
@@ -75,15 +77,15 @@ HTML_PAGE = """<!DOCTYPE html>
   <main class="max-w-md mx-auto p-4 space-y-5">
 
     <!-- Active Profile Banner -->
-    <div id="activeProfileBanner" class="hidden p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs">
+    <div id="activeProfileBanner" class="hidden p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs shadow-xs">
       <div>
         <div class="flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-          <span class="text-[10px] text-emerald-800 font-bold">क्लाउड सिंक एक्टिव (Cloud & Local Synced):</span>
+          <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider">क्लाउड वॉल्ट एक्टिव:</span>
         </div>
-        <strong id="activeBabyNameDisplay" class="text-emerald-950 text-sm font-black mt-0.5 block"></strong>
+        <strong id="activeBabyNameDisplay" class="text-emerald-950 text-base font-black mt-0.5 block"></strong>
       </div>
-      <button onclick="logoutVault()" class="text-[11px] bg-white border border-emerald-300 text-emerald-900 font-bold px-2.5 py-1 rounded-lg active:scale-95 transition">
+      <button onclick="logoutVault()" class="text-xs bg-white border border-emerald-300 text-emerald-900 font-bold px-3 py-1.5 rounded-xl active:scale-95 transition shadow-2xs">
         🔒 लॉगआउट
       </button>
     </div>
@@ -237,16 +239,16 @@ HTML_PAGE = """<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- DEDICATED LIFETIME MILESTONE VAULT DASHBOARD -->
-    <div id="vaultDashboard" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4">
+    <!-- DEDICATED LIFETIME MILESTONE VAULT DASHBOARD (Memories First UI) -->
+    <div id="vaultDashboard" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-5">
       <div class="flex justify-between items-center border-b border-stone-200 pb-3">
         <div>
-          <h2 class="text-lg font-black text-stone-900 flex items-center gap-1.5">
-            <span>🛡️</span> <span id="vaultHeadingBabyName">शिशु</span> <span id="tVaultHeadingText">का डिजिटल संदूक</span>
+          <h2 class="text-lg font-black text-amber-950 flex items-center gap-1.5">
+            <span>📖</span> <span id="vaultHeadingBabyName">शिशु</span> <span id="tVaultHeadingText">का डिजिटल स्मृति संदूक</span>
           </h2>
-          <p id="tVaultSub" class="text-[11px] text-stone-500">अनमोल जीवन की यादें, प्रश्न एवं सम्पूर्ण जन्म विवरण</p>
+          <p id="tVaultSub" class="text-[11px] text-stone-500">जीवन की अनमोल यादें, प्रश्न एवं सम्पूर्ण जन्मपत्री</p>
         </div>
-        <span class="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">Encrypted Vault</span>
+        <span class="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">Encrypted Vault</span>
       </div>
 
       <!-- Quick Kundli Meta Recap Card -->
@@ -257,58 +259,58 @@ HTML_PAGE = """<!DOCTYPE html>
         <div><span class="text-[10px] text-stone-500 block">नामकरण अक्षर:</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
       </div>
 
-      <!-- Add Milestone Form -->
-      <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-2.5">
-        <p id="tAddMemoryTitle" class="font-bold text-stone-700">नई याद / प्रश्न दर्ज करें (Add Question & Memory):</p>
+      <!-- Add Milestone Form (Rich Journal Card) -->
+      <div class="p-4 bg-gradient-to-b from-stone-50 to-white rounded-2xl border border-stone-200 text-xs space-y-3 shadow-xs">
+        <p id="tAddMemoryTitle" class="font-bold text-stone-800 flex items-center gap-1.5">
+          <span>✍️</span> नई याद / सवाल संदूक में जोड़ें:
+        </p>
         
         <div class="flex gap-2">
-          <select id="milestoneType" onchange="toggleCustomQuestion()" class="w-1/2 p-2 rounded-xl border border-stone-300 bg-white">
+          <select id="milestoneType" onchange="toggleCustomQuestion()" class="w-1/2 p-2.5 rounded-xl border border-stone-300 bg-white font-semibold">
             <option value="PRESET">तयशुदा माइलस्टोन</option>
             <option value="CUSTOM">अपना नया सवाल / घटना</option>
           </select>
-          <input type="date" id="mEventDate" class="w-1/2 p-2 rounded-xl border border-stone-300 bg-white">
+          <input type="date" id="mEventDate" class="w-1/2 p-2.5 rounded-xl border border-stone-300 bg-white">
         </div>
 
         <div id="presetSelectDiv">
-          <select id="mPresetTag" class="w-full p-2 rounded-xl border border-stone-300 bg-white">
+          <select id="mPresetTag" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white font-medium">
             <option value="FIRST_SMILE">पहली बार मुस्कुराया (First Smile)</option>
             <option value="FIRST_STEP">पहला कदम रखा (First Steps)</option>
             <option value="FIRST_FOOD">पहला अन्नप्राशन (First Solid Food)</option>
             <option value="FIRST_WORD">पहला शब्द क्या बोला (First Word)</option>
             <option value="FIRST_TRIP">पहली यात्रा / ननिहाल आगमन</option>
+            <option value="FAV_TOY">पहला पसंदीदा खिलौना कौन सा था?</option>
+            <option value="SWEET_HABIT">बचपन की सबसे प्यारी आदत</option>
           </select>
         </div>
 
         <div id="customQuestionDiv" class="hidden">
-          <input type="text" id="mCustomQuestion" placeholder="उदा. पहला खिलौना कौन सा पसंद था? या लोरी सुनते ही क्या किया?" class="w-full p-2 rounded-xl border border-stone-300 bg-white">
+          <input type="text" id="mCustomQuestion" placeholder="उदा. पहली बार बारिश देखकर कैसा लगा? या लोरी पर क्या प्रतिक्रिया दी?" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
         </div>
 
-        <textarea id="mNotes" rows="2" placeholder="उस पल की पूरी याद, भावनाएं व बातें विस्तार से लिखें..." class="w-full p-2.5 rounded-xl border border-stone-300 bg-white"></textarea>
+        <textarea id="mNotes" rows="3" placeholder="उस पल की पूरी याद, भावनाएं, किस्से व बातें विस्तार से लिखें..." class="w-full p-3 rounded-xl border border-stone-300 bg-white leading-relaxed outline-none focus:ring-2 focus:ring-amber-500"></textarea>
 
-        <button id="tSaveVaultBtn" type="button" onclick="saveNewMilestone()" class="w-full py-2.5 bg-stone-900 text-white rounded-xl font-bold active:scale-95 transition">
-          वॉल्ट में सुरक्षित सहेजें (Save to Vault)
+        <button id="tSaveVaultBtn" type="button" onclick="saveNewMilestone()" class="w-full py-3 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
+          सहेजें एवं सुरक्षित लॉक करें (Save to Vault)
         </button>
       </div>
 
       <!-- Actions Bar -->
-      <div class="pt-2 flex justify-between items-center">
+      <div class="pt-1 flex justify-between items-center">
         <button id="tViewSavedBtn" type="button" onclick="triggerSyncAndReload()" class="text-xs text-amber-800 font-bold underline">
           क्लाउड सिंक / रिफ्रेश ↻
         </button>
-        <button id="tDownloadPdfBtn" type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-3.5 py-2 rounded-xl font-bold shadow-sm active:scale-95 transition">
-          📖 PDF एल्बम डाउनलोड
+        <button id="tDownloadPdfBtn" type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-4 py-2 rounded-xl font-bold shadow-xs active:scale-95 transition flex items-center gap-1">
+          <span>📖</span> PDF एल्बम डाउनलोड
         </button>
       </div>
 
-      <!-- List of Milestones -->
-      <div id="albumView" class="space-y-2"></div>
+      <!-- List of Milestones (Card-Deck Aesthetic Style) -->
+      <div id="albumView" class="space-y-3"></div>
 
-      <!-- Backup and Restore Utility -->
-      <div class="pt-3 border-t-2 border-dashed border-stone-200 text-xs space-y-2">
-        <p class="font-bold text-stone-700 flex items-center gap-1.5">
-          <span>💾</span> बैकअप एवं रीस्टोर (Personal Backup & Restore)
-        </p>
-        <p class="text-[10px] text-stone-500">इस बच्चे की पूरी जन्मपत्री एवं यादों का सुरक्षित एन्क्रिप्टेड बैकअप डाउनलोड करें:</p>
+      <!-- Backup, Restore & Password-Protected DELETE Zone -->
+      <div class="pt-4 border-t border-stone-200 text-xs space-y-3">
         <div class="flex gap-2">
           <button onclick="downloadBackupFile()" class="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 transition">
             📥 बैकअप डाउनलोड
@@ -318,7 +320,29 @@ HTML_PAGE = """<!DOCTYPE html>
             <input type="file" id="restoreFileInput" accept=".json" onchange="uploadRestoreFile(event)" class="hidden">
           </label>
         </div>
+
+        <!-- DANGER ZONE: Delete Vault Protected by Master Password -->
+        <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-rose-950 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="font-bold flex items-center gap-1 text-[11px] text-rose-900">
+              <span>⚠️</span> डेंजर ज़ोन: पूरा संदूक मिटाएं (Delete Vault)
+            </span>
+            <button onclick="toggleDeletePrompt()" class="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-900 px-2 py-1 rounded font-bold transition">
+              विकल्प खोलें
+            </button>
+          </div>
+          <div id="deleteVaultDiv" class="hidden pt-2 border-t border-rose-200 space-y-2">
+            <p class="text-[10px] text-rose-800">यह क्रिया इस बच्चे की संपूर्ण जन्मपत्री, सारे मील के पत्थर व यादों को सर्वर से हमेशा के लिए नष्ट कर देगी। पुष्टि के लिए अपना मास्टर पासवर्ड डालें:</p>
+            <div class="flex gap-2">
+              <input type="password" id="deleteConfirmPassword" placeholder="मास्टर पासवर्ड दर्ज करें" class="flex-1 p-2 bg-white rounded-lg border border-rose-300 outline-none">
+              <button onclick="confirmDeleteVault()" class="px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-lg font-bold text-xs active:scale-95 transition">
+                स्थाई रूप से मिटाएं
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
 
   </main>
@@ -332,7 +356,7 @@ HTML_PAGE = """<!DOCTYPE html>
         </h3>
         <button onclick="toggleVaultModal()" class="text-stone-400 hover:text-stone-700 font-black text-sm">✕</button>
       </div>
-      <p class="text-xs text-stone-500">फ़ोन बदलने या डेटा क्लियर होने पर अपना नाम व मास्टर पासवर्ड डालें, क्लाउड से सब कुछ वापस आ जाएगा:</p>
+      <p class="text-xs text-stone-500">डेटा क्लियर होने या दूसरे फ़ोन पर खोलने के लिए बच्चे का नाम व मास्टर पासवर्ड डालें:</p>
 
       <div class="space-y-2.5 text-xs">
         <div>
@@ -350,57 +374,67 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ROYAL CLEAN ALBUM PRINT CANVAS -->
+  <!-- ROYAL CLEAN ALBUM PRINT CANVAS (Exact Full Flow & Zero Cut-off) -->
   <div style="position: absolute; left: -9999px; top: 0;">
     <div id="pdfPrintCanvas">
-      <div style="text-align: center; border-bottom: 2px solid #B45309; padding-bottom: 15px; margin-bottom: 20px;">
-        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">वैदिक जन्मपत्री एवं जीवन स्मृति एल्बम</span>
-        <h1 style="font-family: 'Rozha One', serif; font-size: 30px; color: #78350F; margin: 4px 0 0 0;">🌸 नन्ही दुनिया (Nanhi Duniya)</h1>
+      
+      <!-- Royal Vedic Header -->
+      <div style="text-align: center; border-bottom: 2px solid #92400E; padding-bottom: 12px; margin-bottom: 18px;">
+        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">वैदिक जन्मपत्री एवं जीवन स्मृति संदूक</span>
+        <h1 style="font-family: 'Rozha One', serif; font-size: 28px; color: #78350F; margin: 4px 0 0 0;">🌸 नन्ही दुनिया (Nanhi Duniya)</h1>
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; border: 1.5px solid #F59E0B; padding: 14px 20px; border-radius: 12px; margin-bottom: 22px;">
+      <!-- Golden Baby Identity Strip -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; border: 1.5px solid #F59E0B; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px;">
         <div>
-          <span style="font-size: 11px; color: #92400E; font-weight: bold; text-transform: uppercase;">शिशु का नाम</span>
-          <h2 id="pdfBabyName" style="font-size: 24px; font-weight: 800; color: #78350F; margin: 2px 0 0 0;"></h2>
+          <span style="font-size: 10px; color: #92400E; font-weight: bold; text-transform: uppercase;">शिशु का नाम</span>
+          <h2 id="pdfBabyName" style="font-size: 22px; font-weight: 800; color: #78350F; margin: 2px 0 0 0;"></h2>
         </div>
-        <div style="text-align: right; font-size: 12px; color: #78350F; line-height: 1.5;">
+        <div style="text-align: right; font-size: 11px; color: #78350F; line-height: 1.4;">
           <div><strong id="pdfBirthDate"></strong></div>
           <div id="pdfBirthTime"></div>
           <div id="pdfBirthCity"></div>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; text-align: center; font-size: 12px;">
-        <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
-          <span style="color: #78716C; font-size: 10px; display: block;">लग्न राशि</span>
-          <strong id="pdfLagna" style="color: #78350F; font-size: 14px;"></strong>
+      <!-- Astrological 4-Pillar Grid -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; text-align: center; font-size: 11px;">
+        <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
+          <span style="color: #78716C; font-size: 9px; display: block;">लग्न राशि</span>
+          <strong id="pdfLagna" style="color: #78350F; font-size: 13px;"></strong>
         </div>
-        <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
-          <span style="color: #78716C; font-size: 10px; display: block;">चन्द्र राशि</span>
-          <strong id="pdfRashi" style="color: #1C1917; font-size: 14px;"></strong>
+        <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
+          <span style="color: #78716C; font-size: 9px; display: block;">चन्द्र राशि</span>
+          <strong id="pdfRashi" style="color: #1C1917; font-size: 13px;"></strong>
         </div>
-        <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
-          <span style="color: #78716C; font-size: 10px; display: block;">नक्षत्र एवं चरण</span>
-          <strong id="pdfNakshatra" style="color: #1C1917; font-size: 13px;"></strong>
+        <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
+          <span style="color: #78716C; font-size: 9px; display: block;">नक्षत्र एवं चरण</span>
+          <strong id="pdfNakshatra" style="color: #1C1917; font-size: 12px;"></strong>
         </div>
-        <div style="background: #FEF3C7; padding: 10px; border-radius: 8px; border: 1.5px solid #FCD34D;">
-          <span style="color: #92400E; font-size: 10px; display: block;">नामकरण अक्षर</span>
-          <strong id="pdfAkshar" style="color: #78350F; font-size: 20px;"></strong>
+        <div style="background: #FEF3C7; padding: 8px; border-radius: 6px; border: 1.5px solid #FCD34D;">
+          <span style="color: #92400E; font-size: 9px; display: block;">नामकरण अक्षर</span>
+          <strong id="pdfAkshar" style="color: #78350F; font-size: 18px;"></strong>
         </div>
       </div>
 
-      <div style="text-align: center; margin-bottom: 30px;">
-        <p style="font-size: 13px; font-weight: bold; color: #78350F; margin-bottom: 10px; letter-spacing: 0.5px;">शास्त्रसम्मत लग्न चक्र (Ascendant & 9 Planets)</p>
+      <!-- Lagna Chart Render (Scaled correctly to never cut) -->
+      <div style="text-align: center; margin-bottom: 24px;">
+        <p style="font-size: 12px; font-weight: bold; color: #78350F; margin-bottom: 8px; letter-spacing: 0.5px;">शास्त्रसम्मत लग्न चक्र (Ascendant & 9 Planets)</p>
         <div id="pdfChartClone" style="display: inline-block;"></div>
       </div>
 
-      <div style="border-top: 2px dashed #D6D3D1; padding-top: 20px;">
-        <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0 0 14px 0;">📖 अनमोल यादें एवं मील के पत्थर (Life Journal)</h3>
-        <div id="pdfMilestoneList" style="font-size: 12px;"></div>
+      <!-- Milestone Journal Cards -->
+      <div style="border-top: 2px dashed #B45309; padding-top: 18px;">
+        <div style="text-align: center; margin-bottom: 12px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0;">📖 अनमोल यादें एवं जीवन के मील के पत्थर</h3>
+          <p style="font-size: 10px; color: #78716C; margin: 2px 0 0 0;">(Parent's Recorded Memories, Questions & Cherished Milestones)</p>
+        </div>
+        <div id="pdfMilestoneList" style="font-size: 11px;"></div>
       </div>
 
-      <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #A8A29E; border-top: 1px solid #E7E5E4; padding-top: 10px;">
-        🔒 Zero-Knowledge AES-256 Encrypted Lifetime Journal • Nanhi Duniya Vedic Platform
+      <!-- Footer Seal -->
+      <div style="margin-top: 35px; text-align: center; font-size: 9px; color: #A8A29E; border-top: 1px solid #E7E5E4; padding-top: 8px;">
+        🔒 Zero-Knowledge AES-256 Encrypted Lifetime Journal • Official Nanhi Duniya Record
       </div>
     </div>
   </div>
@@ -412,7 +446,6 @@ HTML_PAGE = """<!DOCTYPE html>
     let namingMode = "strict";
     let currentSavedMilestones = [];
 
-    // ACTIVE SESSION
     let activeSession = {
       profileHash: localStorage.getItem('nd_prof_hash') || '',
       babyName: localStorage.getItem('nd_baby_name') || '',
@@ -420,7 +453,6 @@ HTML_PAGE = """<!DOCTYPE html>
       meta: JSON.parse(localStorage.getItem('nd_baby_meta') || '{}')
     };
 
-    // OFFLINE QUEUE (For when internet is disconnected)
     function getOfflineQueue() {
       return JSON.parse(localStorage.getItem('nd_offline_queue') || '[]');
     }
@@ -469,11 +501,11 @@ HTML_PAGE = """<!DOCTYPE html>
         masterPassPlaceholder: "यह पासवर्ड केवल आपको पता होना चाहिए",
         masterPassNote: "✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।",
         lockProfileBtn: "प्रोफ़ाइल बनाएं एवं क्लाउड संदूक खोलें ➔",
-        vaultHeadingText: "का डिजिटल संदूक",
-        vaultSub: "अनमोल जीवन की यादें, प्रश्न एवं सम्पूर्ण जन्म विवरण",
-        addMemoryTitle: "नई याद / प्रश्न दर्ज करें (Add Question & Memory):",
-        notesPlaceholder: "उस पल की पूरी याद, भावनाएं व बातें विस्तार से लिखें...",
-        saveVaultBtn: "वॉल्ट में सुरक्षित सहेजें (Save to Vault)",
+        vaultHeadingText: "का डिजिटल स्मृति संदूक",
+        vaultSub: "जीवन की अनमोल यादें, प्रश्न एवं सम्पूर्ण जन्मपत्री",
+        addMemoryTitle: "नई याद / सवाल संदूक में जोड़ें:",
+        notesPlaceholder: "उस पल की पूरी याद, भावनाएं, किस्से व बातें विस्तार से लिखें...",
+        saveVaultBtn: "सहेजें एवं सुरक्षित लॉक करें (Save to Vault)",
         viewSavedBtn: "क्लाउड सिंक / रिफ्रेश ↻",
         downloadPdfBtn: "📖 PDF एल्बम डाउनलोड"
       },
@@ -519,7 +551,7 @@ HTML_PAGE = """<!DOCTYPE html>
         lockProfileBtn: "Lock Profile & Open Milestone Vault ➔",
         vaultHeadingText: "'s Digital Vault",
         vaultSub: "Lifetime Memories, Personal Q&A and Vedic Birth Journal",
-        addMemoryTitle: "Add Question & Memory:",
+        addMemoryTitle: "Add Question & Memory to Vault:",
         notesPlaceholder: "Record the emotions, memories and story in detail...",
         saveVaultBtn: "Save Securely to Vault",
         viewSavedBtn: "Cloud Sync / Refresh ↻",
@@ -550,6 +582,39 @@ HTML_PAGE = """<!DOCTYPE html>
 
     function toggleVaultModal() {
       document.getElementById('loginModal').classList.toggle('hidden');
+    }
+
+    function toggleDeletePrompt() {
+      document.getElementById('deleteVaultDiv').classList.toggle('hidden');
+    }
+
+    async function confirmDeleteVault() {
+      const pwd = document.getElementById('deleteConfirmPassword').value.trim();
+      if (!pwd) return alert("कृपया अपना मास्टर पासवर्ड दर्ज करें");
+
+      if (!confirm("⚠️ क्या आप निश्चित रूप से इस बच्चे का पूरा वॉल्ट और सारी यादें हमेशा के लिए मिटाना चाहते हैं? यह क्रिया वापस नहीं होगी!")) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/vault/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profile_hash: activeSession.profileHash,
+            passphrase: pwd
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          alert("🗑️ बच्चे का वॉल्ट और सारी यादें सर्वर से हमेशा के लिए सुरक्षित मिटा दी गई हैं।");
+          logoutVault();
+        } else {
+          alert("त्रुटि: " + data.message);
+        }
+      } catch (e) {
+        alert("सर्वर से संपर्क नहीं हो पाया: " + e.message);
+      }
     }
 
     function switchLanguage(lang) {
@@ -933,11 +998,10 @@ HTML_PAGE = """<!DOCTYPE html>
       };
 
       if (!navigator.onLine) {
-        // Queue locally if offline
         const q = getOfflineQueue();
         q.push(payload);
         setOfflineQueue(q);
-        alert("⚠️ इंटरनेट बंद है! यह याद लोकल ऑफ़लाइन कतार (Queue) में सुरक्षित हो गई है। नेट आते ही यह क्लाउड पर ऑटो-सिंक हो जाएगी।");
+        alert("⚠️ इंटरनेट बंद है! याद को ऑफ़लाइन सहेज लिया गया है। नेट आते ही सिंक हो जाएगी।");
         renderLocalMilestone(payload);
       } else {
         try {
@@ -946,7 +1010,7 @@ HTML_PAGE = """<!DOCTYPE html>
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          alert("🎉 याद सफलतापूर्वक AES-256 क्लाउड वॉल्ट में सुरक्षित हो गई!");
+          alert("🎉 याद सफलतापूर्वक AES-256 क्लाउड वॉल्ट में जुड़ गई!");
           triggerSyncAndReload();
         } catch (e) {
           const q = getOfflineQueue();
@@ -965,10 +1029,12 @@ HTML_PAGE = """<!DOCTYPE html>
       const container = document.getElementById('albumView');
       const d = item.details;
       container.innerHTML = `
-        <div class="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200 text-xs space-y-1.5 shadow-2xs">
+        <div class="p-4 bg-gradient-to-r from-amber-50/80 to-stone-50 rounded-2xl border border-amber-200 text-xs space-y-1.5 shadow-xs">
           <div class="flex justify-between items-center">
-            <span class="font-extrabold text-amber-950 text-sm">${item.event_tag} (ऑफ़लाइन सहेजा गया)</span>
-            <span class="text-[10px] text-amber-800 font-bold">Pending Sync</span>
+            <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1">
+              <span>📌</span> ${item.event_tag}
+            </span>
+            <span class="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">Pending Sync</span>
           </div>
           <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
         </div>` + container.innerHTML;
@@ -1006,19 +1072,25 @@ HTML_PAGE = """<!DOCTYPE html>
         container.innerHTML = "";
 
         if (list.length === 0) {
-          container.innerHTML = `<p class="text-xs text-stone-400 text-center py-3">अभी कोई याद दर्ज नहीं है। ऊपर पहला माइलस्टोन जोड़ें!</p>`;
+          container.innerHTML = `
+            <div class="p-6 text-center border-2 border-dashed border-stone-200 rounded-2xl bg-white/50">
+              <span class="text-2xl block mb-1">🕊️</span>
+              <p class="text-xs text-stone-500 font-medium">अभी कोई याद या सवाल दर्ज नहीं है। ऊपर पहला माइलस्टोन जोड़ें!</p>
+            </div>`;
           return;
         }
 
         list.forEach(item => {
           const d = item.data;
           container.innerHTML += `
-            <div class="p-3.5 bg-white rounded-xl border border-stone-200 text-xs space-y-1.5 shadow-2xs">
+            <div class="p-4 bg-white rounded-2xl border border-stone-200/90 text-xs space-y-2 shadow-xs hover:border-amber-200 transition">
               <div class="flex justify-between items-center">
-                <span class="font-extrabold text-amber-900 text-sm">${item.event_tag}</span>
-                <span class="text-[10px] text-stone-400 font-medium">${d.eventDate || d.savedAt || ''}</span>
+                <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1.5">
+                  <span class="text-amber-700">✦</span> ${item.event_tag}
+                </span>
+                <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
               </div>
-              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
+              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-2.5 rounded-xl border border-stone-100">${d.notes || ''}</p>
             </div>`;
         });
       } catch (err) {
@@ -1040,6 +1112,7 @@ HTML_PAGE = """<!DOCTYPE html>
       document.getElementById('pdfNakshatra').innerText = `${m.nakshatra || '-'} (${m.pada || '-'})`;
       document.getElementById('pdfAkshar').innerText = m.akshar || '-';
 
+      // Deep Clone Complete Live Chart Graphic
       const chartCloneContainer = document.getElementById('pdfChartClone');
       chartCloneContainer.innerHTML = "";
       const originalBox = document.getElementById('mainKundliBox');
@@ -1049,32 +1122,41 @@ HTML_PAGE = """<!DOCTYPE html>
         chartCloneContainer.appendChild(clonedBox);
       }
 
+      // Render memories cleanly into the print template (Never Cut-Off)
       const pdfMilestoneContainer = document.getElementById('pdfMilestoneList');
       pdfMilestoneContainer.innerHTML = "";
       if (currentSavedMilestones.length === 0) {
-        pdfMilestoneContainer.innerHTML = "<p style='color: #78716C; font-style: italic;'>No memories recorded yet.</p>";
+        pdfMilestoneContainer.innerHTML = "<p style='color: #78716C; font-style: italic; text-align: center; padding: 10px;'>No memories recorded yet in this journal.</p>";
       } else {
         currentSavedMilestones.forEach(item => {
           const d = item.data;
           pdfMilestoneContainer.innerHTML += `
-            <div style="background: #FDFBF7; border: 1px solid #E7E5E4; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-              <div style="display: flex; justify-content: space-between; font-weight: bold; color: #78350F; margin-bottom: 4px;">
-                <span style="font-size: 13px;">${item.event_tag}</span>
+            <div style="background: #FFFFFF; border: 1.5px solid #FDE68A; border-left: 4px solid #D97706; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; page-break-inside: avoid;">
+              <div style="display: flex; justify-content: space-between; font-weight: bold; color: #78350F; margin-bottom: 6px;">
+                <span style="font-size: 13px;">✦ ${item.event_tag}</span>
                 <span style="font-size: 10px; color: #78716C;">${d.eventDate || d.savedAt || ''}</span>
               </div>
-              <p style="margin: 0; color: #44403C; line-height: 1.5; white-space: pre-wrap;">${d.notes || ''}</p>
+              <p style="margin: 0; color: #44403C; line-height: 1.5; font-size: 11px; white-space: pre-wrap;">${d.notes || ''}</p>
             </div>
           `;
         });
       }
 
       const certElement = document.getElementById('pdfPrintCanvas');
+
+      // Optimized settings for html2pdf to prevent any blank spaces and cut-offs
       const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `${activeSession.babyName}_Janmapatri_Album.pdf`,
+        margin: [5, 5, 5, 5],
+        filename: `${activeSession.babyName}_Vedic_Janmapatri_Album.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          scrollY: 0,
+          scrollX: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       html2pdf().set(opt).from(certElement).save();
@@ -1215,6 +1297,13 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({"status": "ok", "imported": count}).encode('utf-8'))
+
+        elif self.path == "/api/vault/delete":
+            res = delete_profile_vault(payload['profile_hash'], payload['passphrase'])
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode('utf-8'))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
