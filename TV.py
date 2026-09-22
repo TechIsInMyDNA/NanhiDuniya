@@ -13,7 +13,7 @@ DB_FILE = "milestones.db"
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    # Profiles table: stores blind hashed profile key and encrypted profile metadata
+    # Blind hashed profile key and encrypted profile metadata table
     c.execute('''
         CREATE TABLE IF NOT EXISTS baby_profiles (
             profile_hash TEXT PRIMARY KEY,
@@ -23,7 +23,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    # Milestones table
+    # Encrypted milestones table
     c.execute('''
         CREATE TABLE IF NOT EXISTS milestones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,3 +189,27 @@ def import_single_profile_backup(backup_dict: dict):
     conn.commit()
     conn.close()
     return imported_count
+
+def delete_profile_vault(prof_hash: str, passphrase: str):
+    init_db()
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    # 1. Pehle Master Password ko decrypt karke verify karein
+    c.execute("SELECT enc_profile_meta, meta_nonce, meta_salt FROM baby_profiles WHERE profile_hash = ?", (prof_hash,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return {"status": "error", "message": "Profile nahi mili"}
+
+    meta = decrypt_payload(passphrase, row[0], row[1], row[2])
+    if meta is None:
+        conn.close()
+        return {"status": "error", "message": "Galat password! Vault delete nahi ho sakta"}
+
+    # 2. Sahi password hone par profile aur uske saare milestones database se wipe karein
+    c.execute("DELETE FROM baby_profiles WHERE profile_hash = ?", (prof_hash,))
+    c.execute("DELETE FROM milestones WHERE profile_hash = ?", (prof_hash,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
