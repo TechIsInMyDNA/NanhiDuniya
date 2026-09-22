@@ -1,6 +1,7 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import urllib.parse
+import os
 from ND import get_kundli_details
 from NE import generate_ai_names
 from TV import init_db, add_milestone, get_milestones, export_raw_backup, import_raw_backup
@@ -823,7 +824,6 @@ HTML_PAGE = """<!DOCTYPE html>
       html2pdf().set(opt).from(certElement).save();
     }
 
-    // BACKUP & RESTORE JAVASCRIPT FUNCTIONS
     async function downloadBackupFile() {
       try {
         const res = await fetch('/api/backup/export');
@@ -869,6 +869,12 @@ HTML_PAGE = """<!DOCTYPE html>
 """
 
 class SimpleServer(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        # Solves UptimeRobot 501 Not Implemented issue
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.end_headers()
+
     def do_GET(self):
         url = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(url.query)
@@ -945,10 +951,7 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": "ok", "imported": count}).encode('utf-8'))
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8000))
     print(f"\n🌸 Nanhi Duniya Live at port: {port}")
     server = HTTPServer(('0.0.0.0', port), SimpleServer)
     server.serve_forever()
-
-
