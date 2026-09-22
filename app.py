@@ -4,7 +4,14 @@ import urllib.parse
 import os
 from ND import get_kundli_details
 from NE import generate_ai_names
-from TV import init_db, add_milestone, get_milestones, export_raw_backup, import_raw_backup
+from TV import (
+    init_db,
+    register_or_login_profile,
+    add_profile_milestone,
+    get_profile_milestones,
+    export_single_profile_backup,
+    import_single_profile_backup
+)
 
 init_db()
 
@@ -13,10 +20,10 @@ HTML_PAGE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nanhi Duniya - Vedic Kundli, Naming & Vault</title>
+  <title>Nanhi Duniya - Vedic Kundli & Baby Milestone Vault</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Rozha+One&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FAF7F2; }
     .glass-card { background: rgba(255, 255, 255, 0.96); border: 1px solid #EFEAE1; }
@@ -26,23 +33,55 @@ HTML_PAGE = """<!DOCTYPE html>
     .rashi-no { color: #9A3412; font-size: 11px; font-weight: 800; display: block; line-height: 1; }
     .grah-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 2px; }
     .grah-badge { background: #EEF2FF; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 1px 3px; border-radius: 4px; border: 1px solid #DBEAFE; }
-    #pdfCertTemplate { background: #FFFFFF; color: #1C1917; width: 680px; padding: 30px; margin: 0 auto; }
+    
+    /* Clean Album PDF Layout */
+    #pdfPrintCanvas {
+      width: 720px;
+      padding: 35px;
+      background: #FFFFFF;
+      color: #1C1917;
+      border: 6px double #D97706;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
   </style>
 </head>
-<body class="text-stone-800 pb-20">
+<body class="text-stone-800 pb-24">
 
-  <header class="py-3 px-4 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs flex justify-between items-center max-w-md mx-auto">
-    <div>
-      <h1 class="text-xl font-black text-amber-900 tracking-tight">🌸 Nanhi Duniya</h1>
-      <p id="tSubHeader" class="text-[10px] text-stone-500">वैदिक लग्न कुंडली • नामकरण • माइलस्टोन वॉल्ट</p>
-    </div>
-    <div class="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-bold">
-      <button id="langHiBtn" onclick="switchLanguage('hi')" class="px-2.5 py-1 rounded-lg bg-amber-800 text-white transition shadow-2xs">हिंदी</button>
-      <button id="langEnBtn" onclick="switchLanguage('en')" class="px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition">English</button>
+  <!-- Header with Session Status & Lang -->
+  <header class="py-3 px-4 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-black text-amber-900 tracking-tight flex items-center gap-1.5">
+          <span>🌸</span> Nanhi Duniya
+        </h1>
+        <p id="tSubHeader" class="text-[10px] text-stone-500">वैदिक जन्मपत्री • नामकरण • डिजिटल याद संदूक</p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs font-bold">
+          <button id="langHiBtn" onclick="switchLanguage('hi')" class="px-2 py-1 rounded-lg bg-amber-800 text-white transition">हिंदी</button>
+          <button id="langEnBtn" onclick="switchLanguage('en')" class="px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition">EN</button>
+        </div>
+        <button id="navVaultBtn" onclick="toggleVaultModal()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-950 px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition">
+          <span>🔐</span> <span id="navVaultText">लॉगिन / वॉल्ट</span>
+        </button>
+      </div>
     </div>
   </header>
 
   <main class="max-w-md mx-auto p-4 space-y-5">
+
+    <!-- Active Profile Banner if Logged In -->
+    <div id="activeProfileBanner" class="hidden p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs">
+      <div>
+        <span class="text-[10px] text-emerald-800 font-bold block">सक्रिय वॉल्ट प्रोफ़ाइल (Locked & Safe):</span>
+        <strong id="activeBabyNameDisplay" class="text-emerald-950 text-sm font-black"></strong>
+      </div>
+      <button onclick="logoutVault()" class="text-[11px] bg-white border border-emerald-300 text-emerald-900 font-bold px-2.5 py-1 rounded-lg active:scale-95 transition">
+        🔒 लॉगआउट
+      </button>
+    </div>
 
     <!-- STEP 1: Janm Vivaran Form -->
     <div id="stepBirthForm" class="glass-card rounded-2xl p-5 shadow-sm space-y-3">
@@ -163,12 +202,12 @@ HTML_PAGE = """<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- STEP 3: Master Password Lock -->
-    <div id="profileLockSection" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4 border-2 border-amber-300">
+    <!-- STEP 3: Setup Profile & Set Master Password Modal/Section -->
+    <div id="profileSetupSection" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4 border-2 border-amber-300">
       <div class="flex justify-between items-center">
         <div>
           <h2 id="tProfileLockTitle" class="text-base font-bold text-stone-900 flex items-center gap-1.5">
-            <span>🔐</span> शिशु प्रोफ़ाइल एवं मास्टर पासवर्ड
+            <span>🔐</span> शिशु प्रोफ़ाइल बनाएं एवं पासवर्ड सेट करें
           </h2>
           <p class="text-[11px] text-stone-500">Zero-Knowledge AES-256 Vault Encryption</p>
         </div>
@@ -185,28 +224,37 @@ HTML_PAGE = """<!DOCTYPE html>
       <div class="space-y-2 text-xs">
         <label id="tMasterPassPrompt" class="block font-bold text-stone-700">एक गुप्त मास्टर पासवर्ड (Family Secret Key) बनाएं:</label>
         <input type="password" id="masterPasswordInput" placeholder="यह पासवर्ड केवल आपको पता होना चाहिए" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none">
-        <p id="tMasterPassNote" class="text-[10px] text-stone-500">✦ इसी पासवर्ड से भविष्य में शिशु की सारी यादें सुरक्षित रहेंगी।</p>
+        <p id="tMasterPassNote" class="text-[10px] text-stone-500">✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।</p>
         
-        <button id="tLockProfileBtn" onclick="lockProfileAndOpenVault()" class="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
-          प्रोफ़ाइल लॉक करें एवं माइलस्टोन वॉल्ट खोलें ➔
+        <button id="tLockProfileBtn" onclick="createBabyProfileVault()" class="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
+          प्रोफ़ाइल लॉक करें एवं डिजिटल संदूक खोलें ➔
         </button>
       </div>
     </div>
 
-    <!-- STEP 4: Lifetime Milestone Vault -->
-    <div id="vaultSection" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4">
-      <div class="flex justify-between items-center">
+    <!-- DEDICATED LIFETIME MILESTONE VAULT DASHBOARD -->
+    <div id="vaultDashboard" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4">
+      <div class="flex justify-between items-center border-b border-stone-200 pb-3">
         <div>
-          <h2 class="text-base font-bold text-stone-800 flex items-center gap-1.5">
-            <span>🛡️</span> <span id="vaultBabyNameHeading">शिशु</span> <span id="tVaultHeadingText">का माइलस्टोन वॉल्ट</span>
+          <h2 class="text-lg font-black text-stone-900 flex items-center gap-1.5">
+            <span>🛡️</span> <span id="vaultHeadingBabyName">शिशु</span> <span id="tVaultHeadingText">का डिजिटल संदूक</span>
           </h2>
-          <p id="tVaultSub" class="text-[11px] text-stone-500">जीवन की अनमोल यादें एवं प्रश्न संदूक</p>
+          <p id="tVaultSub" class="text-[11px] text-stone-500">अनमोल जीवन की यादें, प्रश्न एवं सम्पूर्ण जन्म विवरण</p>
         </div>
-        <span id="tSecureVaultTag" class="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">सुरक्षित वॉल्ट</span>
+        <span class="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">Encrypted Vault</span>
       </div>
 
+      <!-- Quick Kundli Meta Recap Card inside Vault -->
+      <div id="vaultKundliCard" class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs grid grid-cols-2 gap-2">
+        <div><span class="text-[10px] text-stone-500 block">लग्न:</span><strong id="vLagnaText">-</strong></div>
+        <div><span class="text-[10px] text-stone-500 block">राशि:</span><strong id="vRashiText">-</strong></div>
+        <div><span class="text-[10px] text-stone-500 block">नक्षत्र:</span><strong id="vNakshatraText">-</strong></div>
+        <div><span class="text-[10px] text-stone-500 block">नामकरण अक्षर:</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
+      </div>
+
+      <!-- Add Milestone Form -->
       <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-2.5">
-        <p id="tAddMemoryTitle" class="font-bold text-stone-700">नई याद / प्रश्न (Add Question & Memory):</p>
+        <p id="tAddMemoryTitle" class="font-bold text-stone-700">नई याद / प्रश्न दर्ज करें (Add Question & Memory):</p>
         
         <div class="flex gap-2">
           <select id="milestoneType" onchange="toggleCustomQuestion()" class="w-1/2 p-2 rounded-xl border border-stone-300 bg-white">
@@ -237,23 +285,25 @@ HTML_PAGE = """<!DOCTYPE html>
         </button>
       </div>
 
-      <div class="pt-2 border-t border-stone-200 flex justify-between items-center">
+      <!-- Actions Bar -->
+      <div class="pt-2 flex justify-between items-center">
         <button id="tViewSavedBtn" type="button" onclick="loadSavedMilestones()" class="text-xs text-amber-800 font-bold underline">
-          सहेजी हुई यादें देखें ↻
+          ताज़ा करें ↻
         </button>
         <button id="tDownloadPdfBtn" type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-3.5 py-2 rounded-xl font-bold shadow-sm active:scale-95 transition">
           📖 PDF एल्बम डाउनलोड
         </button>
       </div>
 
+      <!-- List of Milestones -->
       <div id="albumView" class="space-y-2"></div>
 
-      <!-- PARENTS DATA BACKUP & RESTORE UTILITY -->
+      <!-- Backup and Restore Utility inside Vault -->
       <div class="pt-3 border-t-2 border-dashed border-stone-200 text-xs space-y-2">
         <p class="font-bold text-stone-700 flex items-center gap-1.5">
-          <span>💾</span> माता-पिता के लिए सुरक्षित बैकअप (Backup & Restore)
+          <span>💾</span> बैकअप एवं रीस्टोर (Personal Backup & Restore)
         </p>
-        <p class="text-[10px] text-stone-500">फ़ोन बदलने या सुरक्षित रखने के लिए एन्क्रिप्टेड फ़ाइल डाउनलोड व रीस्टोर करें:</p>
+        <p class="text-[10px] text-stone-500">इस बच्चे की पूरी जन्मपत्री एवं यादों का सुरक्षित एन्क्रिप्टेड बैकअप डाउनलोड करें:</p>
         <div class="flex gap-2">
           <button onclick="downloadBackupFile()" class="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 transition">
             📥 बैकअप डाउनलोड
@@ -268,78 +318,112 @@ HTML_PAGE = """<!DOCTYPE html>
 
   </main>
 
-  <!-- Complete Standalone Printable PDF Canvas Template -->
-  <div style="position: absolute; left: -9999px; top: 0;">
-    <div id="pdfCertTemplate">
-      <div style="text-align: center; border-bottom: 2px solid #854D0E; padding-bottom: 12px; margin-bottom: 15px;">
-        <h1 style="font-size: 26px; font-weight: 800; color: #78350F; margin: 0;">🌸 नन्ही दुनिया (Nanhi Duniya)</h1>
-        <p style="font-size: 13px; color: #78716C; margin: 4px 0 0 0;">Official Digital Janmapatri & Lifetime Milestone Journal</p>
+  <!-- Login/Unlock Modal (Blind Lookup: Zero leak) -->
+  <div id="loginModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-xl">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-stone-900 flex items-center gap-1.5">
+          <span>🔑</span> बच्चे का वॉल्ट खोलें (Unlock Vault)
+        </h3>
+        <button onclick="toggleVaultModal()" class="text-stone-400 hover:text-stone-700 font-black text-sm">✕</button>
       </div>
+      <p class="text-xs text-stone-500">सुरक्षा कारणों से किसी भी बच्चे का नाम सार्वजनिक नहीं है। केवल सही नाम व पासवर्ड डालने पर ही संदूक खुलेगा:</p>
 
-      <div style="display: flex; justify-content: space-between; background: #FEF3C7; border: 1px solid #FDE68A; padding: 12px 18px; border-radius: 10px; margin-bottom: 20px;">
+      <div class="space-y-2.5 text-xs">
         <div>
-          <span style="font-size: 11px; color: #92400E; display: block;">शिशु का नाम (Baby Name)</span>
-          <span id="pdfBabyName" style="font-size: 20px; font-weight: 800; color: #78350F;"></span>
+          <label class="block font-semibold text-stone-700 mb-1">शिशु का नाम (Baby Name)</label>
+          <input type="text" id="loginBabyName" placeholder="उदा. आरव" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none">
         </div>
-        <div style="text-align: right; font-size: 11px; color: #78350F; font-weight: 600;">
-          <p id="pdfBirthDate" style="margin: 0;"></p>
-          <p id="pdfBirthTime" style="margin: 2px 0 0 0;"></p>
-          <p id="pdfBirthCity" style="margin: 2px 0 0 0;"></p>
+        <div>
+          <label class="block font-semibold text-stone-700 mb-1">मास्टर पासवर्ड (Master Password)</label>
+          <input type="password" id="loginPassword" placeholder="पासवर्ड दर्ज करें" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none">
+        </div>
+        <button onclick="loginToVault()" class="w-full py-2.5 bg-amber-900 text-white rounded-xl font-bold active:scale-95 transition">
+          वॉल्ट अनलॉक करें ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROYAL CLEAN ALBUM PRINT CANVAS -->
+  <div style="position: absolute; left: -9999px; top: 0;">
+    <div id="pdfPrintCanvas">
+      <!-- Title Header -->
+      <div style="text-align: center; border-bottom: 2px solid #B45309; padding-bottom: 15px; margin-bottom: 20px;">
+        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">वैदिक जन्मपत्री एवं जीवन स्मृति एल्बम</span>
+        <h1 style="font-family: 'Rozha One', serif; font-size: 30px; color: #78350F; margin: 4px 0 0 0;">🌸 नन्ही दुनिया (Nanhi Duniya)</h1>
+      </div>
+
+      <!-- Golden Baby Profile Strip -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; border: 1.5px solid #F59E0B; padding: 14px 20px; border-radius: 12px; margin-bottom: 22px;">
+        <div>
+          <span style="font-size: 11px; color: #92400E; font-weight: bold; text-transform: uppercase;">शिशु का नाम</span>
+          <h2 id="pdfBabyName" style="font-size: 24px; font-weight: 800; color: #78350F; margin: 2px 0 0 0;"></h2>
+        </div>
+        <div style="text-align: right; font-size: 12px; color: #78350F; line-height: 1.5;">
+          <div><strong id="pdfBirthDate"></strong></div>
+          <div id="pdfBirthTime"></div>
+          <div id="pdfBirthCity"></div>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; text-align: center; font-size: 11px;">
-        <div style="padding: 8px; background: #F5F5F4; border-radius: 6px;">
-          <span style="color: #78716C; display: block;">लग्न राशि</span>
-          <strong id="pdfLagna" style="color: #78350F;"></strong>
+      <!-- Astrological Kundli 4-Box Grid -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; text-align: center; font-size: 12px;">
+        <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
+          <span style="color: #78716C; font-size: 10px; display: block;">लग्न राशि</span>
+          <strong id="pdfLagna" style="color: #78350F; font-size: 14px;"></strong>
         </div>
-        <div style="padding: 8px; background: #F5F5F4; border-radius: 6px;">
-          <span style="color: #78716C; display: block;">चन्द्र राशि</span>
-          <strong id="pdfRashi" style="color: #1C1917;"></strong>
+        <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
+          <span style="color: #78716C; font-size: 10px; display: block;">चन्द्र राशि</span>
+          <strong id="pdfRashi" style="color: #1C1917; font-size: 14px;"></strong>
         </div>
-        <div style="padding: 8px; background: #F5F5F4; border-radius: 6px;">
-          <span style="color: #78716C; display: block;">नक्षत्र एवं चरण</span>
-          <strong id="pdfNakshatra" style="color: #1C1917;"></strong>
+        <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
+          <span style="color: #78716C; font-size: 10px; display: block;">नक्षत्र एवं चरण</span>
+          <strong id="pdfNakshatra" style="color: #1C1917; font-size: 13px;"></strong>
         </div>
-        <div style="padding: 8px; background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 6px;">
-          <span style="color: #92400E; display: block;">नामकरण अक्षर</span>
-          <strong id="pdfAkshar" style="color: #78350F; font-size: 16px;"></strong>
+        <div style="background: #FEF3C7; padding: 10px; border-radius: 8px; border: 1.5px solid #FCD34D;">
+          <span style="color: #92400E; font-size: 10px; display: block;">नामकरण अक्षर</span>
+          <strong id="pdfAkshar" style="color: #78350F; font-size: 20px;"></strong>
         </div>
       </div>
 
-      <div style="text-align: center; margin-bottom: 25px;">
-        <p style="font-size: 12px; font-weight: bold; color: #78350F; margin-bottom: 8px;">लग्न कुण्डली (Lagna Chart)</p>
+      <!-- Lagna Chart Graphic -->
+      <div style="text-align: center; margin-bottom: 30px;">
+        <p style="font-size: 13px; font-weight: bold; color: #78350F; margin-bottom: 10px; letter-spacing: 0.5px;">शास्त्रसम्मत लग्न चक्र (Ascendant & 9 Planets)</p>
         <div id="pdfChartClone" style="display: inline-block;"></div>
       </div>
 
-      <div style="border-top: 2px dashed #D6D3D1; padding-top: 15px;">
-        <h3 style="font-size: 15px; font-weight: bold; color: #78350F; margin: 0 0 10px 0;">🛡️ अनमोल यादें एवं मील के पत्थर (Life Milestones & Memories)</h3>
-        <div id="pdfMilestoneList" style="font-size: 11px;"></div>
+      <!-- Milestone Journal Entries -->
+      <div style="border-top: 2px dashed #D6D3D1; padding-top: 20px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0 0 14px 0;">📖 अनमोल यादें एवं मील के पत्थर (Life Journal)</h3>
+        <div id="pdfMilestoneList" style="font-size: 12px;"></div>
       </div>
 
-      <div style="margin-top: 30px; text-align: center; font-size: 9px; color: #A8A29E; border-top: 1px solid #E7E5E4; padding-top: 8px;">
-        Encrypted with Zero-Knowledge AES-256 Vault • Generated by Nanhi Duniya Engine
+      <!-- Footer Seal -->
+      <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #A8A29E; border-top: 1px solid #E7E5E4; padding-top: 10px;">
+        🔒 Zero-Knowledge AES-256 Encrypted Lifetime Journal • Nanhi Duniya Vedic Platform
       </div>
     </div>
   </div>
 
   <script>
     let currentLang = 'hi';
-    let currentLetter = "तू";
+    let currentLetter = "खी";
     let selectedGender = "All";
     let namingMode = "strict";
     let currentSavedMilestones = [];
-    let finalizedBaby = {
-      name: "",
-      city: "",
-      date: "",
-      time: "",
-      masterPassword: ""
+
+    // Persistent Session Cache in Browser LocalStorage
+    let activeSession = {
+      profileHash: localStorage.getItem('nd_prof_hash') || '',
+      babyName: localStorage.getItem('nd_baby_name') || '',
+      passphrase: sessionStorage.getItem('nd_passphrase') || '',
+      meta: JSON.parse(localStorage.getItem('nd_baby_meta') || '{}')
     };
 
     const UI_STRINGS = {
       hi: {
-        subHeader: "वैदिक लग्न कुंडली • नामकरण • माइलस्टोन वॉल्ट",
+        subHeader: "वैदिक जन्मपत्री • नामकरण • डिजिटल याद संदूक",
         birthHeader: "✨ जन्म विवरण (Birth Details)",
         step1Tag: "चरण 1",
         cityLabel: "जन्म स्थान (City / District)",
@@ -368,7 +452,7 @@ HTML_PAGE = """<!DOCTYPE html>
         sigLabel: "ज्योतिषीय महत्व:",
         boyTag: "👦 लड़का",
         girlTag: "👧 लड़की",
-        profileLockTitle: "🔐 शिशु प्रोफ़ाइल एवं मास्टर पासवर्ड",
+        profileLockTitle: "🔐 शिशु प्रोफ़ाइल बनाएं एवं पासवर्ड सेट करें",
         step2Tag: "चरण 2",
         finalNameLabel: "अंतिम चुना हुआ नाम:",
         finalDateLabel: "जन्म तारीख:",
@@ -376,19 +460,18 @@ HTML_PAGE = """<!DOCTYPE html>
         finalCityLabel: "जन्म स्थान:",
         masterPassPrompt: "एक गुप्त मास्टर पासवर्ड (Family Secret Key) बनाएं:",
         masterPassPlaceholder: "यह पासवर्ड केवल आपको पता होना चाहिए",
-        masterPassNote: "✦ इसी पासवर्ड से भविष्य में शिशु की सारी यादें सुरक्षित रहेंगी।",
-        lockProfileBtn: "प्रोफ़ाइल लॉक करें एवं माइलस्टोन वॉल्ट खोलें ➔",
-        vaultHeadingText: "का माइलस्टोन वॉल्ट",
-        vaultSub: "जीवन की अनमोल यादें एवं प्रश्न संदूक",
-        secureVaultTag: "सुरक्षित वॉल्ट",
-        addMemoryTitle: "नई याद / प्रश्न (Add Question & Memory):",
+        masterPassNote: "✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।",
+        lockProfileBtn: "प्रोफ़ाइल लॉक करें एवं डिजिटल संदूक खोलें ➔",
+        vaultHeadingText: "का डिजिटल संदूक",
+        vaultSub: "अनमोल जीवन की यादें, प्रश्न एवं सम्पूर्ण जन्म विवरण",
+        addMemoryTitle: "नई याद / प्रश्न दर्ज करें (Add Question & Memory):",
         notesPlaceholder: "उस पल की पूरी याद, भावनाएं व बातें विस्तार से लिखें...",
         saveVaultBtn: "वॉल्ट में सुरक्षित सहेजें (Save to Vault)",
-        viewSavedBtn: "सहेजी हुई यादें देखें ↻",
+        viewSavedBtn: "ताज़ा करें ↻",
         downloadPdfBtn: "📖 PDF एल्बम डाउनलोड"
       },
       en: {
-        subHeader: "Vedic Lagna Kundli • Shastriya Naming • Milestone Vault",
+        subHeader: "Vedic Janmapatri • Naming • Digital Memory Vault",
         birthHeader: "✨ Birth Details (Janm Vivaran)",
         step1Tag: "Step 1",
         cityLabel: "Birth Place (City / District)",
@@ -417,7 +500,7 @@ HTML_PAGE = """<!DOCTYPE html>
         sigLabel: "Significance:",
         boyTag: "👦 Boy",
         girlTag: "👧 Girl",
-        profileLockTitle: "🔐 Baby Profile & Master Password",
+        profileLockTitle: "🔐 Create Baby Profile & Set Password",
         step2Tag: "Step 2",
         finalNameLabel: "Final Chosen Name:",
         finalDateLabel: "Birth Date:",
@@ -425,29 +508,38 @@ HTML_PAGE = """<!DOCTYPE html>
         finalCityLabel: "Birth Place:",
         masterPassPrompt: "Create a Master Password (Family Secret Key):",
         masterPassPlaceholder: "This password should only be known to you",
-        masterPassNote: "✦ All future memories, milestones and photos are securely encrypted with this key.",
+        masterPassNote: "✦ Neither other parents nor admins can ever access this password.",
         lockProfileBtn: "Lock Profile & Open Milestone Vault ➔",
-        vaultHeadingText: "'s Milestone Vault",
-        vaultSub: "Lifetime Memories & Questions Vault",
-        secureVaultTag: "Secure Vault",
-        addMemoryTitle: "Add Milestone / Question & Memory:",
+        vaultHeadingText: "'s Digital Vault",
+        vaultSub: "Lifetime Memories, Personal Q&A and Vedic Birth Journal",
+        addMemoryTitle: "Add Question & Memory:",
         notesPlaceholder: "Record the emotions, memories and story in detail...",
         saveVaultBtn: "Save Securely to Vault",
-        viewSavedBtn: "View Saved Memories ↻",
+        viewSavedBtn: "Refresh ↻",
         downloadPdfBtn: "📖 Export PDF Album"
       }
     };
 
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check if session exists on reload
+      if (activeSession.profileHash && activeSession.passphrase) {
+        showVaultDashboard();
+      }
+    });
+
+    function toggleVaultModal() {
+      document.getElementById('loginModal').classList.toggle('hidden');
+    }
+
     function switchLanguage(lang) {
       currentLang = lang;
       if (lang === 'hi') {
-        document.getElementById('langHiBtn').className = "px-2.5 py-1 rounded-lg bg-amber-800 text-white transition shadow-2xs";
-        document.getElementById('langEnBtn').className = "px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
+        document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
+        document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
       } else {
-        document.getElementById('langEnBtn').className = "px-2.5 py-1 rounded-lg bg-amber-800 text-white transition shadow-2xs";
-        document.getElementById('langHiBtn').className = "px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
+        document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
+        document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
       }
-
       const s = UI_STRINGS[lang];
       document.getElementById('tSubHeader').innerText = s.subHeader;
       document.getElementById('tBirthHeader').innerHTML = `<span>✨</span> ${s.birthHeader}`;
@@ -490,7 +582,6 @@ HTML_PAGE = """<!DOCTYPE html>
 
       document.getElementById('tVaultHeadingText').innerText = s.vaultHeadingText;
       document.getElementById('tVaultSub').innerText = s.vaultSub;
-      document.getElementById('tSecureVaultTag').innerText = s.secureVaultTag;
       document.getElementById('tAddMemoryTitle').innerText = s.addMemoryTitle;
       document.getElementById('mNotes').placeholder = s.notesPlaceholder;
       document.getElementById('tSaveVaultBtn').innerText = s.saveVaultBtn;
@@ -506,7 +597,6 @@ HTML_PAGE = """<!DOCTYPE html>
         sel.options[4].text = "First Family Trip";
         document.getElementById('milestoneType').options[0].text = "Standard Milestone";
         document.getElementById('milestoneType').options[1].text = "Custom Question / Memory";
-        document.getElementById('mCustomQuestion').placeholder = "e.g., Favorite first toy, reaction to lullaby...";
       } else {
         sel.options[0].text = "पहली बार मुस्कुराया (First Smile)";
         sel.options[1].text = "पहला कदम रखा (First Steps)";
@@ -515,7 +605,6 @@ HTML_PAGE = """<!DOCTYPE html>
         sel.options[4].text = "पहली यात्रा / ननिहाल आगमन";
         document.getElementById('milestoneType').options[0].text = "तयशुदा माइलस्टोन";
         document.getElementById('milestoneType').options[1].text = "अपना नया सवाल / घटना";
-        document.getElementById('mCustomQuestion').placeholder = "उदा. पहला खिलौना कौन सा पसंद था? या लोरी सुनते ही क्या किया?";
       }
 
       fetchAINames();
@@ -550,36 +639,24 @@ HTML_PAGE = """<!DOCTYPE html>
       const bDate = document.getElementById('bDate').value;
       const bTime = document.getElementById('bTime').value;
 
-      if (!bDate || !bTime) return alert(currentLang === 'hi' ? "Date aur time dalein" : "Please enter date and time");
+      if (!bDate || !bTime) return alert("Date aur time dalein");
 
-      btn.innerText = currentLang === 'hi' ? "Kundli Banayi Ja Rahi Hai..." : "Calculating Kundli...";
+      btn.innerText = "Kundli Banayi Ja Rahi Hai...";
       btn.disabled = true;
 
       try {
         const parts = bDate.split(/[-/]/);
-        let year, month, day;
-        if (parts[0].length === 4) {
-          year = parseInt(parts[0]); month = parseInt(parts[1]); day = parseInt(parts[2]);
-        } else {
-          day = parseInt(parts[0]); month = parseInt(parts[1]); year = parseInt(parts[2]);
-        }
-
+        let year = parseInt(parts[0]), month = parseInt(parts[1]), day = parseInt(parts[2]);
         const tParts = bTime.split(':');
-        const hour = parseInt(tParts[0]);
-        const minute = parseInt(tParts[1]);
+        const hour = parseInt(tParts[0]), minute = parseInt(tParts[1]);
 
         const res = await fetch(`/api/kundli?y=${year}&m=${month}&d=${day}&h=${hour}&min=${minute}&city=${encodeURIComponent(bCity)}`);
         const data = await res.json();
 
-        document.getElementById('resLagna').innerText = currentLang === 'hi' 
-          ? `${data.lagna_hindi} (${data.lagna_english})`
-          : `${data.lagna_english} (${data.lagna_hindi})`;
-        document.getElementById('resRashi').innerText = currentLang === 'hi'
-          ? `${data.rashi_hindi} (${data.rashi_english})`
-          : `${data.rashi_english} (${data.rashi_hindi})`;
-
+        document.getElementById('resLagna').innerText = `${data.lagna_hindi} (${data.lagna_english})`;
+        document.getElementById('resRashi').innerText = `${data.rashi_hindi} (${data.rashi_english})`;
         document.getElementById('resNakshatra').innerText = data.nakshatra_hindi;
-        document.getElementById('resPada').innerText = currentLang === 'hi' ? `Charan ${data.charan}` : `Quarter ${data.charan}`;
+        document.getElementById('resPada').innerText = `Charan ${data.charan}`;
         document.getElementById('resAkshar').innerText = data.naam_akshar_hindi;
 
         currentLetter = data.naam_akshar_hindi;
@@ -649,44 +726,141 @@ HTML_PAGE = """<!DOCTYPE html>
           `;
         });
       } catch (e) {
-        listDiv.innerHTML = `<p class="text-xs text-red-500 text-center py-2">${currentLang === 'hi' ? 'नाम लोड करने में समस्या आई।' : 'Failed to load names.'}</p>`;
+        listDiv.innerHTML = `<p class="text-xs text-red-500 text-center py-2">Failed to load names.</p>`;
       }
     }
 
     function useCustomName() {
       const cName = document.getElementById('customNameInput').value.trim();
-      if (!cName) return alert(currentLang === 'hi' ? "कृपया नाम दर्ज करें" : "Please enter a name");
+      if (!cName) return alert("कृपया नाम दर्ज करें");
       finalizeName(cName);
     }
 
     function finalizeName(name) {
-      finalizedBaby.name = name;
-      finalizedBaby.city = document.getElementById('bCity').value.trim();
-      finalizedBaby.date = document.getElementById('bDate').value;
-      finalizedBaby.time = document.getElementById('bTime').value;
+      document.getElementById('cardFinalName').innerText = name;
+      document.getElementById('cardFinalDate').innerText = document.getElementById('bDate').value;
+      document.getElementById('cardFinalTime').innerText = document.getElementById('bTime').value;
+      document.getElementById('cardFinalCity').innerText = document.getElementById('bCity').value;
 
-      document.getElementById('cardFinalName').innerText = finalizedBaby.name;
-      document.getElementById('cardFinalDate').innerText = finalizedBaby.date;
-      document.getElementById('cardFinalTime').innerText = finalizedBaby.time;
-      document.getElementById('cardFinalCity').innerText = finalizedBaby.city;
-
-      document.getElementById('profileLockSection').classList.remove('hidden');
-      document.getElementById('profileLockSection').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('profileSetupSection').classList.remove('hidden');
+      document.getElementById('profileSetupSection').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function lockProfileAndOpenVault() {
+    async function createBabyProfileVault() {
+      const babyName = document.getElementById('cardFinalName').innerText.trim();
       const pwd = document.getElementById('masterPasswordInput').value.trim();
-      if (!pwd) return alert(currentLang === 'hi' ? "कृपया एक मास्टर पासवर्ड दर्ज करें!" : "Please enter a master password!");
-      if (pwd.length < 4) return alert(currentLang === 'hi' ? "पासवर्ड कम से कम 4 अक्षरों का रखें" : "Password must be at least 4 characters");
 
-      finalizedBaby.masterPassword = pwd;
+      if (!babyName) return alert("कृपया नाम चुनें");
+      if (!pwd || pwd.length < 4) return alert("पासवर्ड कम से कम 4 अक्षरों का रखें");
 
-      document.getElementById('vaultBabyNameHeading').innerText = finalizedBaby.name;
-      document.getElementById('vaultSection').classList.remove('hidden');
-      document.getElementById('vaultSection').scrollIntoView({ behavior: 'smooth' });
+      const meta = {
+        baby_name: babyName,
+        city: document.getElementById('cardFinalCity').innerText,
+        date: document.getElementById('cardFinalDate').innerText,
+        time: document.getElementById('cardFinalTime').innerText,
+        lagna: document.getElementById('resLagna').innerText,
+        rashi: document.getElementById('resRashi').innerText,
+        nakshatra: document.getElementById('resNakshatra').innerText,
+        pada: document.getElementById('resPada').innerText,
+        akshar: document.getElementById('resAkshar').innerText
+      };
 
+      const res = await fetch('/api/profile/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baby_name: babyName,
+          passphrase: pwd,
+          meta_data: meta
+        })
+      });
+
+      const data = await res.json();
+      if (data.status === 'ok') {
+        activeSession.profileHash = data.profile_hash;
+        activeSession.babyName = babyName;
+        activeSession.passphrase = pwd;
+        activeSession.meta = data.meta;
+
+        // Persist session across refresh
+        localStorage.setItem('nd_prof_hash', data.profile_hash);
+        localStorage.setItem('nd_baby_name', babyName);
+        sessionStorage.setItem('nd_passphrase', pwd);
+        localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
+
+        alert("🎉 बच्चे की प्रोफ़ाइल सफलतापूर्वक बन गई और वॉल्ट सुरक्षित लॉक हो गया!");
+        showVaultDashboard();
+      } else {
+        alert("त्रुटि: " + data.message);
+      }
+    }
+
+    async function loginToVault() {
+      const babyName = document.getElementById('loginBabyName').value.trim();
+      const pwd = document.getElementById('loginPassword').value.trim();
+
+      if (!babyName || !pwd) return alert("कृपया नाम और पासवर्ड भरें");
+
+      const res = await fetch('/api/profile/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baby_name: babyName,
+          passphrase: pwd
+        })
+      });
+
+      const data = await res.json();
+      if (data.status === 'ok') {
+        activeSession.profileHash = data.profile_hash;
+        activeSession.babyName = babyName;
+        activeSession.passphrase = pwd;
+        activeSession.meta = data.meta;
+
+        localStorage.setItem('nd_prof_hash', data.profile_hash);
+        localStorage.setItem('nd_baby_name', babyName);
+        sessionStorage.setItem('nd_passphrase', pwd);
+        localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
+
+        toggleVaultModal();
+        showVaultDashboard();
+      } else {
+        alert("⚠️ अमान्य क्रेडेंशियल्स! नाम या पासवर्ड गलत है।");
+      }
+    }
+
+    function logoutVault() {
+      localStorage.removeItem('nd_prof_hash');
+      localStorage.removeItem('nd_baby_name');
+      sessionStorage.removeItem('nd_passphrase');
+      localStorage.removeItem('nd_baby_meta');
+
+      activeSession = { profileHash: '', babyName: '', passphrase: '', meta: {} };
+
+      document.getElementById('vaultDashboard').classList.add('hidden');
+      document.getElementById('activeProfileBanner').classList.add('hidden');
+      document.getElementById('navVaultText').innerText = "लॉगिन / वॉल्ट";
+      alert("🔒 वॉल्ट सुरक्षित लॉक और लॉगआउट कर दिया गया है।");
+    }
+
+    function showVaultDashboard() {
+      document.getElementById('activeProfileBanner').classList.remove('hidden');
+      document.getElementById('activeBabyNameDisplay').innerText = activeSession.babyName;
+      document.getElementById('navVaultText').innerText = activeSession.babyName;
+      document.getElementById('vaultHeadingBabyName').innerText = activeSession.babyName;
+
+      const m = activeSession.meta;
+      if (m) {
+        document.getElementById('vLagnaText').innerText = m.lagna || '-';
+        document.getElementById('vRashiText').innerText = m.rashi || '-';
+        document.getElementById('vNakshatraText').innerText = `${m.nakshatra || '-'} (${m.pada || ''})`;
+        document.getElementById('vAksharText').innerText = m.akshar || '-';
+      }
+
+      document.getElementById('vaultDashboard').classList.remove('hidden');
       document.getElementById('mEventDate').value = new Date().toISOString().split('T')[0];
       loadSavedMilestones();
+      document.getElementById('vaultDashboard').scrollIntoView({ behavior: 'smooth' });
     }
 
     function toggleCustomQuestion() {
@@ -701,7 +875,7 @@ HTML_PAGE = """<!DOCTYPE html>
     }
 
     async function saveNewMilestone() {
-      if (!finalizedBaby.masterPassword) return alert("Master password not set");
+      if (!activeSession.profileHash || !activeSession.passphrase) return alert("कृपया पहले वॉल्ट लॉगिन करें");
 
       const type = document.getElementById('milestoneType').value;
       const eventDate = document.getElementById('mEventDate').value;
@@ -710,20 +884,20 @@ HTML_PAGE = """<!DOCTYPE html>
       let eventTag = "";
       if (type === 'CUSTOM') {
         eventTag = document.getElementById('mCustomQuestion').value.trim();
-        if (!eventTag) return alert(currentLang === 'hi' ? "कृपया अपना सवाल / घटना का शीर्षक लिखें" : "Please enter question/title");
+        if (!eventTag) return alert("कृपया अपना सवाल / घटना लिखें");
       } else {
         const sel = document.getElementById('mPresetTag');
         eventTag = sel.options[sel.selectedIndex].text;
       }
 
-      if (!notes) return alert(currentLang === 'hi' ? "कृपया उस पल की यादें या विवरण लिखें" : "Please record the story/details");
+      if (!notes) return alert("कृपया उस पल की यादें लिखें");
 
       await fetch('/api/milestones/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          baby_id: finalizedBaby.name.toLowerCase().replace(/\\s+/g, '_') || "primary_baby",
-          passphrase: finalizedBaby.masterPassword,
+          profile_hash: activeSession.profileHash,
+          passphrase: activeSession.passphrase,
           event_tag: eventTag,
           details: { 
             title: eventTag, 
@@ -734,56 +908,54 @@ HTML_PAGE = """<!DOCTYPE html>
         })
       });
 
-      alert(currentLang === 'hi' ? "🎉 यह अनमोल याद वॉल्ट में AES-256 सुरक्षित सहेज ली गई!" : "🎉 Milestone securely saved to encrypted vault!");
+      alert("🎉 याद सफलतापूर्वक AES-256 वॉल्ट में जुड़ गई!");
       document.getElementById('mNotes').value = "";
       if (type === 'CUSTOM') document.getElementById('mCustomQuestion').value = "";
       loadSavedMilestones();
     }
 
     async function loadSavedMilestones() {
-      const babyId = finalizedBaby.name.toLowerCase().replace(/\\s+/g, '_') || "primary_baby";
-      const pwd = finalizedBaby.masterPassword;
+      if (!activeSession.profileHash || !activeSession.passphrase) return;
 
-      const res = await fetch(`/api/milestones/get?baby_id=${encodeURIComponent(babyId)}&pass=${encodeURIComponent(pwd)}`);
+      const res = await fetch(`/api/milestones/get?prof_hash=${encodeURIComponent(activeSession.profileHash)}&pass=${encodeURIComponent(activeSession.passphrase)}`);
       const list = await res.json();
       currentSavedMilestones = list;
       const container = document.getElementById('albumView');
       container.innerHTML = "";
 
       if (list.length === 0) {
-        container.innerHTML = `<p class="text-xs text-stone-400 text-center py-2">${currentLang === 'hi' ? 'अभी कोई याद सहेजी नहीं गई है। पहली याद ऊपर जोड़ें!' : 'No memories saved yet. Add your first memory above!'}</p>`;
+        container.innerHTML = `<p class="text-xs text-stone-400 text-center py-3">अभी कोई याद दर्ज नहीं है। ऊपर पहला माइलस्टोन जोड़ें!</p>`;
         return;
       }
 
       list.forEach(item => {
         const d = item.data;
         container.innerHTML += `
-          <div class="p-3 bg-white rounded-xl border border-stone-200 text-xs space-y-1 shadow-2xs">
+          <div class="p-3.5 bg-white rounded-xl border border-stone-200 text-xs space-y-1.5 shadow-2xs">
             <div class="flex justify-between items-center">
-              <span class="font-extrabold text-amber-900">${item.event_tag}</span>
-              <span class="text-[10px] text-stone-400">${d.eventDate || d.savedAt || ''}</span>
+              <span class="font-extrabold text-amber-900 text-sm">${item.event_tag}</span>
+              <span class="text-[10px] text-stone-400 font-medium">${d.eventDate || d.savedAt || ''}</span>
             </div>
-            <p class="text-stone-700 whitespace-pre-wrap">${d.notes || ''}</p>
+            <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
           </div>`;
       });
     }
 
     function downloadAlbumPDF() {
-      if (!finalizedBaby.name) {
-        alert(currentLang === 'hi' ? "कृपया पहले एक नाम चुनें और प्रोफ़ाइल लॉक करें!" : "Please select a name and lock profile first!");
-        return;
-      }
+      if (!activeSession.babyName) return alert("कृपया पहले वॉल्ट लॉगिन करें");
 
-      document.getElementById('pdfBabyName').innerText = finalizedBaby.name;
-      document.getElementById('pdfBirthDate').innerText = `Date: ${finalizedBaby.date || document.getElementById('bDate').value}`;
-      document.getElementById('pdfBirthTime').innerText = `Time: ${finalizedBaby.time || document.getElementById('bTime').value}`;
-      document.getElementById('pdfBirthCity').innerText = `Place: ${finalizedBaby.city || document.getElementById('bCity').value}`;
+      const m = activeSession.meta || {};
+      document.getElementById('pdfBabyName').innerText = activeSession.babyName;
+      document.getElementById('pdfBirthDate').innerText = `तारीख: ${m.date || '-'}`;
+      document.getElementById('pdfBirthTime').innerText = `समय: ${m.time || '-'}`;
+      document.getElementById('pdfBirthCity').innerText = `स्थान: ${m.city || '-'}`;
 
-      document.getElementById('pdfLagna').innerText = document.getElementById('resLagna').innerText || '-';
-      document.getElementById('pdfRashi').innerText = document.getElementById('resRashi').innerText || '-';
-      document.getElementById('pdfNakshatra').innerText = `${document.getElementById('resNakshatra').innerText || '-'} (${document.getElementById('resPada').innerText || '-'})`;
-      document.getElementById('pdfAkshar').innerText = document.getElementById('resAkshar').innerText || '-';
+      document.getElementById('pdfLagna').innerText = m.lagna || '-';
+      document.getElementById('pdfRashi').innerText = m.rashi || '-';
+      document.getElementById('pdfNakshatra').innerText = `${m.nakshatra || '-'} (${m.pada || '-'})`;
+      document.getElementById('pdfAkshar').innerText = m.akshar || '-';
 
+      // Clone Chart
       const chartCloneContainer = document.getElementById('pdfChartClone');
       chartCloneContainer.innerHTML = "";
       const originalBox = document.getElementById('mainKundliBox');
@@ -793,29 +965,30 @@ HTML_PAGE = """<!DOCTYPE html>
         chartCloneContainer.appendChild(clonedBox);
       }
 
+      // Render milestones
       const pdfMilestoneContainer = document.getElementById('pdfMilestoneList');
       pdfMilestoneContainer.innerHTML = "";
       if (currentSavedMilestones.length === 0) {
-        pdfMilestoneContainer.innerHTML = "<p style='color: #78716C; font-style: italic;'>No milestones recorded in vault yet.</p>";
+        pdfMilestoneContainer.innerHTML = "<p style='color: #78716C; font-style: italic;'>No memories recorded yet.</p>";
       } else {
         currentSavedMilestones.forEach(item => {
           const d = item.data;
           pdfMilestoneContainer.innerHTML += `
-            <div style="background: #FBF9F5; border: 1px solid #E7E5E4; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+            <div style="background: #FDFBF7; border: 1px solid #E7E5E4; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; font-weight: bold; color: #78350F; margin-bottom: 4px;">
-                <span>${item.event_tag}</span>
+                <span style="font-size: 13px;">${item.event_tag}</span>
                 <span style="font-size: 10px; color: #78716C;">${d.eventDate || d.savedAt || ''}</span>
               </div>
-              <p style="margin: 0; color: #44403C; line-height: 1.4; white-space: pre-wrap;">${d.notes || ''}</p>
+              <p style="margin: 0; color: #44403C; line-height: 1.5; white-space: pre-wrap;">${d.notes || ''}</p>
             </div>
           `;
         });
       }
 
-      const certElement = document.getElementById('pdfCertTemplate');
+      const certElement = document.getElementById('pdfPrintCanvas');
       const opt = {
-        margin: [8, 8, 8, 8],
-        filename: `${finalizedBaby.name}_Janmapatri_Album.pdf`,
+        margin: [10, 10, 10, 10],
+        filename: `${activeSession.babyName}_Janmapatri_Album.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -825,19 +998,20 @@ HTML_PAGE = """<!DOCTYPE html>
     }
 
     async function downloadBackupFile() {
+      if (!activeSession.profileHash) return alert("कृपया पहले वॉल्ट लॉगिन करें");
       try {
-        const res = await fetch('/api/backup/export');
+        const res = await fetch(`/api/backup/export?prof_hash=${encodeURIComponent(activeSession.profileHash)}`);
         const data = await res.json();
         const jsonStr = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `NanhiDuniya_Encrypted_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `${activeSession.babyName}_Encrypted_Vault_Backup.json`;
         a.click();
         URL.revokeObjectURL(url);
       } catch (err) {
-        alert("बैकअप डाउनलोड करने में समस्या आई: " + err.message);
+        alert("बैकअप डाउनलोड त्रुटि: " + err.message);
       }
     }
 
@@ -870,7 +1044,6 @@ HTML_PAGE = """<!DOCTYPE html>
 
 class SimpleServer(BaseHTTPRequestHandler):
     def do_HEAD(self):
-        # Solves UptimeRobot 501 Not Implemented issue
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.end_headers()
@@ -899,7 +1072,7 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(res).encode('utf-8'))
 
         elif url.path == "/api/ai-names":
-            letter = params.get('letter', ['तू'])[0]
+            letter = params.get('letter', ['खी'])[0]
             gender = params.get('gender', ['All'])[0]
             mode = params.get('mode', ['strict'])[0]
             names = generate_ai_names(letter, gender, mode)
@@ -909,28 +1082,41 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(names).encode('utf-8'))
 
         elif url.path == "/api/milestones/get":
-            baby_id = params.get('baby_id', ['primary_baby'])[0]
+            prof_hash = params.get('prof_hash', [''])[0]
             pwd = params.get('pass', [''])[0]
-            data = get_milestones(baby_id, pwd)
+            data = get_profile_milestones(prof_hash, pwd)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(data).encode('utf-8'))
 
         elif url.path == "/api/backup/export":
-            backup = export_raw_backup()
+            prof_hash = params.get('prof_hash', [''])[0]
+            backup = export_single_profile_backup(prof_hash)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(backup).encode('utf-8'))
 
     def do_POST(self):
-        if self.path == "/api/milestones/add":
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            payload = json.loads(body.decode('utf-8'))
-            add_milestone(
-                payload['baby_id'],
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length)
+        payload = json.loads(body.decode('utf-8'))
+
+        if self.path == "/api/profile/auth":
+            res = register_or_login_profile(
+                payload['baby_name'],
+                payload['passphrase'],
+                payload.get('meta_data')
+            )
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode('utf-8'))
+
+        elif self.path == "/api/milestones/add":
+            add_profile_milestone(
+                payload['profile_hash'],
                 payload['passphrase'],
                 payload['event_tag'],
                 payload['details']
@@ -941,10 +1127,7 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": "ok"}).encode('utf-8'))
 
         elif self.path == "/api/backup/import":
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            payload = json.loads(body.decode('utf-8'))
-            count = import_raw_backup(payload)
+            count = import_single_profile_backup(payload)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
