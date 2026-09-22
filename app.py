@@ -34,7 +34,6 @@ HTML_PAGE = """<!DOCTYPE html>
     .grah-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 2px; }
     .grah-badge { background: #EEF2FF; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 1px 3px; border-radius: 4px; border: 1px solid #DBEAFE; }
     
-    /* Clean Album PDF Layout */
     #pdfPrintCanvas {
       width: 720px;
       padding: 35px;
@@ -48,14 +47,17 @@ HTML_PAGE = """<!DOCTYPE html>
 </head>
 <body class="text-stone-800 pb-24">
 
-  <!-- Header with Session Status & Lang -->
+  <!-- Header -->
   <header class="py-3 px-4 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <div>
         <h1 class="text-xl font-black text-amber-900 tracking-tight flex items-center gap-1.5">
           <span>🌸</span> Nanhi Duniya
         </h1>
-        <p id="tSubHeader" class="text-[10px] text-stone-500">वैदिक जन्मपत्री • नामकरण • डिजिटल याद संदूक</p>
+        <div class="flex items-center gap-2 mt-0.5">
+          <p id="tSubHeader" class="text-[10px] text-stone-500">वैदिक जन्मपत्री • नामकरण • डिजिटल संदूक</p>
+          <span id="syncStatusBadge" class="text-[9px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded-full font-bold">● Offline Ready</span>
+        </div>
       </div>
 
       <div class="flex items-center gap-2">
@@ -72,18 +74,21 @@ HTML_PAGE = """<!DOCTYPE html>
 
   <main class="max-w-md mx-auto p-4 space-y-5">
 
-    <!-- Active Profile Banner if Logged In -->
+    <!-- Active Profile Banner -->
     <div id="activeProfileBanner" class="hidden p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs">
       <div>
-        <span class="text-[10px] text-emerald-800 font-bold block">सक्रिय वॉल्ट प्रोफ़ाइल (Locked & Safe):</span>
-        <strong id="activeBabyNameDisplay" class="text-emerald-950 text-sm font-black"></strong>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+          <span class="text-[10px] text-emerald-800 font-bold">क्लाउड सिंक एक्टिव (Cloud & Local Synced):</span>
+        </div>
+        <strong id="activeBabyNameDisplay" class="text-emerald-950 text-sm font-black mt-0.5 block"></strong>
       </div>
       <button onclick="logoutVault()" class="text-[11px] bg-white border border-emerald-300 text-emerald-900 font-bold px-2.5 py-1 rounded-lg active:scale-95 transition">
         🔒 लॉगआउट
       </button>
     </div>
 
-    <!-- STEP 1: Janm Vivaran Form -->
+    <!-- STEP 1: Birth Form -->
     <div id="stepBirthForm" class="glass-card rounded-2xl p-5 shadow-sm space-y-3">
       <div class="flex justify-between items-center">
         <h2 id="tBirthHeader" class="text-base font-bold text-stone-800 flex items-center gap-2">
@@ -202,14 +207,14 @@ HTML_PAGE = """<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- STEP 3: Setup Profile & Set Master Password Modal/Section -->
+    <!-- STEP 3: Setup Profile Section -->
     <div id="profileSetupSection" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4 border-2 border-amber-300">
       <div class="flex justify-between items-center">
         <div>
           <h2 id="tProfileLockTitle" class="text-base font-bold text-stone-900 flex items-center gap-1.5">
             <span>🔐</span> शिशु प्रोफ़ाइल बनाएं एवं पासवर्ड सेट करें
           </h2>
-          <p class="text-[11px] text-stone-500">Zero-Knowledge AES-256 Vault Encryption</p>
+          <p class="text-[11px] text-stone-500">Zero-Knowledge AES-256 Cloud Vault Encryption</p>
         </div>
         <span id="tStep2Tag" class="text-xs bg-emerald-100 text-emerald-900 font-bold px-2 py-0.5 rounded-md">चरण 2</span>
       </div>
@@ -227,7 +232,7 @@ HTML_PAGE = """<!DOCTYPE html>
         <p id="tMasterPassNote" class="text-[10px] text-stone-500">✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।</p>
         
         <button id="tLockProfileBtn" onclick="createBabyProfileVault()" class="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
-          प्रोफ़ाइल लॉक करें एवं डिजिटल संदूक खोलें ➔
+          प्रोफ़ाइल बनाएं एवं क्लाउड संदूक खोलें ➔
         </button>
       </div>
     </div>
@@ -244,7 +249,7 @@ HTML_PAGE = """<!DOCTYPE html>
         <span class="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">Encrypted Vault</span>
       </div>
 
-      <!-- Quick Kundli Meta Recap Card inside Vault -->
+      <!-- Quick Kundli Meta Recap Card -->
       <div id="vaultKundliCard" class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs grid grid-cols-2 gap-2">
         <div><span class="text-[10px] text-stone-500 block">लग्न:</span><strong id="vLagnaText">-</strong></div>
         <div><span class="text-[10px] text-stone-500 block">राशि:</span><strong id="vRashiText">-</strong></div>
@@ -287,8 +292,8 @@ HTML_PAGE = """<!DOCTYPE html>
 
       <!-- Actions Bar -->
       <div class="pt-2 flex justify-between items-center">
-        <button id="tViewSavedBtn" type="button" onclick="loadSavedMilestones()" class="text-xs text-amber-800 font-bold underline">
-          ताज़ा करें ↻
+        <button id="tViewSavedBtn" type="button" onclick="triggerSyncAndReload()" class="text-xs text-amber-800 font-bold underline">
+          क्लाउड सिंक / रिफ्रेश ↻
         </button>
         <button id="tDownloadPdfBtn" type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-3.5 py-2 rounded-xl font-bold shadow-sm active:scale-95 transition">
           📖 PDF एल्बम डाउनलोड
@@ -298,7 +303,7 @@ HTML_PAGE = """<!DOCTYPE html>
       <!-- List of Milestones -->
       <div id="albumView" class="space-y-2"></div>
 
-      <!-- Backup and Restore Utility inside Vault -->
+      <!-- Backup and Restore Utility -->
       <div class="pt-3 border-t-2 border-dashed border-stone-200 text-xs space-y-2">
         <p class="font-bold text-stone-700 flex items-center gap-1.5">
           <span>💾</span> बैकअप एवं रीस्टोर (Personal Backup & Restore)
@@ -318,7 +323,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
   </main>
 
-  <!-- Login/Unlock Modal (Blind Lookup: Zero leak) -->
+  <!-- Login/Unlock Modal -->
   <div id="loginModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-xl">
       <div class="flex justify-between items-center">
@@ -327,7 +332,7 @@ HTML_PAGE = """<!DOCTYPE html>
         </h3>
         <button onclick="toggleVaultModal()" class="text-stone-400 hover:text-stone-700 font-black text-sm">✕</button>
       </div>
-      <p class="text-xs text-stone-500">सुरक्षा कारणों से किसी भी बच्चे का नाम सार्वजनिक नहीं है। केवल सही नाम व पासवर्ड डालने पर ही संदूक खुलेगा:</p>
+      <p class="text-xs text-stone-500">फ़ोन बदलने या डेटा क्लियर होने पर अपना नाम व मास्टर पासवर्ड डालें, क्लाउड से सब कुछ वापस आ जाएगा:</p>
 
       <div class="space-y-2.5 text-xs">
         <div>
@@ -348,13 +353,11 @@ HTML_PAGE = """<!DOCTYPE html>
   <!-- ROYAL CLEAN ALBUM PRINT CANVAS -->
   <div style="position: absolute; left: -9999px; top: 0;">
     <div id="pdfPrintCanvas">
-      <!-- Title Header -->
       <div style="text-align: center; border-bottom: 2px solid #B45309; padding-bottom: 15px; margin-bottom: 20px;">
         <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">वैदिक जन्मपत्री एवं जीवन स्मृति एल्बम</span>
         <h1 style="font-family: 'Rozha One', serif; font-size: 30px; color: #78350F; margin: 4px 0 0 0;">🌸 नन्ही दुनिया (Nanhi Duniya)</h1>
       </div>
 
-      <!-- Golden Baby Profile Strip -->
       <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; border: 1.5px solid #F59E0B; padding: 14px 20px; border-radius: 12px; margin-bottom: 22px;">
         <div>
           <span style="font-size: 11px; color: #92400E; font-weight: bold; text-transform: uppercase;">शिशु का नाम</span>
@@ -367,7 +370,6 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Astrological Kundli 4-Box Grid -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; text-align: center; font-size: 12px;">
         <div style="background: #F5F5F4; padding: 10px; border-radius: 8px; border: 1px solid #E7E5E4;">
           <span style="color: #78716C; font-size: 10px; display: block;">लग्न राशि</span>
@@ -387,19 +389,16 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Lagna Chart Graphic -->
       <div style="text-align: center; margin-bottom: 30px;">
         <p style="font-size: 13px; font-weight: bold; color: #78350F; margin-bottom: 10px; letter-spacing: 0.5px;">शास्त्रसम्मत लग्न चक्र (Ascendant & 9 Planets)</p>
         <div id="pdfChartClone" style="display: inline-block;"></div>
       </div>
 
-      <!-- Milestone Journal Entries -->
       <div style="border-top: 2px dashed #D6D3D1; padding-top: 20px;">
         <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0 0 14px 0;">📖 अनमोल यादें एवं मील के पत्थर (Life Journal)</h3>
         <div id="pdfMilestoneList" style="font-size: 12px;"></div>
       </div>
 
-      <!-- Footer Seal -->
       <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #A8A29E; border-top: 1px solid #E7E5E4; padding-top: 10px;">
         🔒 Zero-Knowledge AES-256 Encrypted Lifetime Journal • Nanhi Duniya Vedic Platform
       </div>
@@ -413,7 +412,7 @@ HTML_PAGE = """<!DOCTYPE html>
     let namingMode = "strict";
     let currentSavedMilestones = [];
 
-    // Persistent Session Cache in Browser LocalStorage
+    // ACTIVE SESSION
     let activeSession = {
       profileHash: localStorage.getItem('nd_prof_hash') || '',
       babyName: localStorage.getItem('nd_baby_name') || '',
@@ -421,9 +420,17 @@ HTML_PAGE = """<!DOCTYPE html>
       meta: JSON.parse(localStorage.getItem('nd_baby_meta') || '{}')
     };
 
+    // OFFLINE QUEUE (For when internet is disconnected)
+    function getOfflineQueue() {
+      return JSON.parse(localStorage.getItem('nd_offline_queue') || '[]');
+    }
+    function setOfflineQueue(q) {
+      localStorage.setItem('nd_offline_queue', JSON.stringify(q));
+    }
+
     const UI_STRINGS = {
       hi: {
-        subHeader: "वैदिक जन्मपत्री • नामकरण • डिजिटल याद संदूक",
+        subHeader: "वैदिक जन्मपत्री • नामकरण • डिजिटल संदूक",
         birthHeader: "✨ जन्म विवरण (Birth Details)",
         step1Tag: "चरण 1",
         cityLabel: "जन्म स्थान (City / District)",
@@ -461,13 +468,13 @@ HTML_PAGE = """<!DOCTYPE html>
         masterPassPrompt: "एक गुप्त मास्टर पासवर्ड (Family Secret Key) बनाएं:",
         masterPassPlaceholder: "यह पासवर्ड केवल आपको पता होना चाहिए",
         masterPassNote: "✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।",
-        lockProfileBtn: "प्रोफ़ाइल लॉक करें एवं डिजिटल संदूक खोलें ➔",
+        lockProfileBtn: "प्रोफ़ाइल बनाएं एवं क्लाउड संदूक खोलें ➔",
         vaultHeadingText: "का डिजिटल संदूक",
         vaultSub: "अनमोल जीवन की यादें, प्रश्न एवं सम्पूर्ण जन्म विवरण",
         addMemoryTitle: "नई याद / प्रश्न दर्ज करें (Add Question & Memory):",
         notesPlaceholder: "उस पल की पूरी याद, भावनाएं व बातें विस्तार से लिखें...",
         saveVaultBtn: "वॉल्ट में सुरक्षित सहेजें (Save to Vault)",
-        viewSavedBtn: "ताज़ा करें ↻",
+        viewSavedBtn: "क्लाउड सिंक / रिफ्रेश ↻",
         downloadPdfBtn: "📖 PDF एल्बम डाउनलोड"
       },
       en: {
@@ -515,13 +522,27 @@ HTML_PAGE = """<!DOCTYPE html>
         addMemoryTitle: "Add Question & Memory:",
         notesPlaceholder: "Record the emotions, memories and story in detail...",
         saveVaultBtn: "Save Securely to Vault",
-        viewSavedBtn: "Refresh ↻",
+        viewSavedBtn: "Cloud Sync / Refresh ↻",
         downloadPdfBtn: "📖 Export PDF Album"
       }
     };
 
+    window.addEventListener('online', () => {
+      document.getElementById('syncStatusBadge').innerText = "● Cloud Connected";
+      document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold";
+      flushOfflineQueueToServer();
+    });
+
+    window.addEventListener('offline', () => {
+      document.getElementById('syncStatusBadge').innerText = "● Offline Mode (Queued)";
+      document.getElementById('syncStatusBadge').className = "text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold";
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
-      // Check if session exists on reload
+      if (navigator.onLine) {
+        document.getElementById('syncStatusBadge').innerText = "● Cloud Connected";
+        document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold";
+      }
       if (activeSession.profileHash && activeSession.passphrase) {
         showVaultDashboard();
       }
@@ -765,33 +786,36 @@ HTML_PAGE = """<!DOCTYPE html>
         akshar: document.getElementById('resAkshar').innerText
       };
 
-      const res = await fetch('/api/profile/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baby_name: babyName,
-          passphrase: pwd,
-          meta_data: meta
-        })
-      });
+      try {
+        const res = await fetch('/api/profile/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            baby_name: babyName,
+            passphrase: pwd,
+            meta_data: meta
+          })
+        });
 
-      const data = await res.json();
-      if (data.status === 'ok') {
-        activeSession.profileHash = data.profile_hash;
-        activeSession.babyName = babyName;
-        activeSession.passphrase = pwd;
-        activeSession.meta = data.meta;
+        const data = await res.json();
+        if (data.status === 'ok') {
+          activeSession.profileHash = data.profile_hash;
+          activeSession.babyName = babyName;
+          activeSession.passphrase = pwd;
+          activeSession.meta = data.meta;
 
-        // Persist session across refresh
-        localStorage.setItem('nd_prof_hash', data.profile_hash);
-        localStorage.setItem('nd_baby_name', babyName);
-        sessionStorage.setItem('nd_passphrase', pwd);
-        localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
+          localStorage.setItem('nd_prof_hash', data.profile_hash);
+          localStorage.setItem('nd_baby_name', babyName);
+          sessionStorage.setItem('nd_passphrase', pwd);
+          localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
 
-        alert("🎉 बच्चे की प्रोफ़ाइल सफलतापूर्वक बन गई और वॉल्ट सुरक्षित लॉक हो गया!");
-        showVaultDashboard();
-      } else {
-        alert("त्रुटि: " + data.message);
+          alert("🎉 बच्चे की प्रोफ़ाइल क्लाउड सर्वर पर सुरक्षित रजिस्टर हो गई!");
+          showVaultDashboard();
+        } else {
+          alert("त्रुटि: " + data.message);
+        }
+      } catch (err) {
+        alert("इंटरनेट कनेक्शन चेक करें: " + err.message);
       }
     }
 
@@ -801,31 +825,35 @@ HTML_PAGE = """<!DOCTYPE html>
 
       if (!babyName || !pwd) return alert("कृपया नाम और पासवर्ड भरें");
 
-      const res = await fetch('/api/profile/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          baby_name: babyName,
-          passphrase: pwd
-        })
-      });
+      try {
+        const res = await fetch('/api/profile/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            baby_name: babyName,
+            passphrase: pwd
+          })
+        });
 
-      const data = await res.json();
-      if (data.status === 'ok') {
-        activeSession.profileHash = data.profile_hash;
-        activeSession.babyName = babyName;
-        activeSession.passphrase = pwd;
-        activeSession.meta = data.meta;
+        const data = await res.json();
+        if (data.status === 'ok') {
+          activeSession.profileHash = data.profile_hash;
+          activeSession.babyName = babyName;
+          activeSession.passphrase = pwd;
+          activeSession.meta = data.meta;
 
-        localStorage.setItem('nd_prof_hash', data.profile_hash);
-        localStorage.setItem('nd_baby_name', babyName);
-        sessionStorage.setItem('nd_passphrase', pwd);
-        localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
+          localStorage.setItem('nd_prof_hash', data.profile_hash);
+          localStorage.setItem('nd_baby_name', babyName);
+          sessionStorage.setItem('nd_passphrase', pwd);
+          localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
 
-        toggleVaultModal();
-        showVaultDashboard();
-      } else {
-        alert("⚠️ अमान्य क्रेडेंशियल्स! नाम या पासवर्ड गलत है।");
+          toggleVaultModal();
+          showVaultDashboard();
+        } else {
+          alert("⚠️ अमान्य क्रेडेंशियल्स! नाम या पासवर्ड गलत है।");
+        }
+      } catch (err) {
+        alert("सर्वर से कनेक्ट नहीं हो सका। कृपया नेट चेक करें।");
       }
     }
 
@@ -859,7 +887,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
       document.getElementById('vaultDashboard').classList.remove('hidden');
       document.getElementById('mEventDate').value = new Date().toISOString().split('T')[0];
-      loadSavedMilestones();
+      triggerSyncAndReload();
       document.getElementById('vaultDashboard').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -892,53 +920,110 @@ HTML_PAGE = """<!DOCTYPE html>
 
       if (!notes) return alert("कृपया उस पल की यादें लिखें");
 
-      await fetch('/api/milestones/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile_hash: activeSession.profileHash,
-          passphrase: activeSession.passphrase,
-          event_tag: eventTag,
-          details: { 
-            title: eventTag, 
-            notes: notes, 
-            eventDate: eventDate,
-            savedAt: new Date().toLocaleDateString('hi-IN') 
-          }
-        })
-      });
+      const payload = {
+        profile_hash: activeSession.profileHash,
+        passphrase: activeSession.passphrase,
+        event_tag: eventTag,
+        details: { 
+          title: eventTag, 
+          notes: notes, 
+          eventDate: eventDate,
+          savedAt: new Date().toLocaleDateString('hi-IN') 
+        }
+      };
 
-      alert("🎉 याद सफलतापूर्वक AES-256 वॉल्ट में जुड़ गई!");
-      document.getElementById('mNotes').value = "";
-      if (type === 'CUSTOM') document.getElementById('mCustomQuestion').value = "";
-      loadSavedMilestones();
-    }
-
-    async function loadSavedMilestones() {
-      if (!activeSession.profileHash || !activeSession.passphrase) return;
-
-      const res = await fetch(`/api/milestones/get?prof_hash=${encodeURIComponent(activeSession.profileHash)}&pass=${encodeURIComponent(activeSession.passphrase)}`);
-      const list = await res.json();
-      currentSavedMilestones = list;
-      const container = document.getElementById('albumView');
-      container.innerHTML = "";
-
-      if (list.length === 0) {
-        container.innerHTML = `<p class="text-xs text-stone-400 text-center py-3">अभी कोई याद दर्ज नहीं है। ऊपर पहला माइलस्टोन जोड़ें!</p>`;
-        return;
+      if (!navigator.onLine) {
+        // Queue locally if offline
+        const q = getOfflineQueue();
+        q.push(payload);
+        setOfflineQueue(q);
+        alert("⚠️ इंटरनेट बंद है! यह याद लोकल ऑफ़लाइन कतार (Queue) में सुरक्षित हो गई है। नेट आते ही यह क्लाउड पर ऑटो-सिंक हो जाएगी।");
+        renderLocalMilestone(payload);
+      } else {
+        try {
+          await fetch('/api/milestones/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          alert("🎉 याद सफलतापूर्वक AES-256 क्लाउड वॉल्ट में सुरक्षित हो गई!");
+          triggerSyncAndReload();
+        } catch (e) {
+          const q = getOfflineQueue();
+          q.push(payload);
+          setOfflineQueue(q);
+          alert("सर्वर तक कनेक्शन नहीं पहुंचा। याद को ऑफ़लाइन कतार में सहेज लिया गया है।");
+          renderLocalMilestone(payload);
+        }
       }
 
-      list.forEach(item => {
-        const d = item.data;
-        container.innerHTML += `
-          <div class="p-3.5 bg-white rounded-xl border border-stone-200 text-xs space-y-1.5 shadow-2xs">
-            <div class="flex justify-between items-center">
-              <span class="font-extrabold text-amber-900 text-sm">${item.event_tag}</span>
-              <span class="text-[10px] text-stone-400 font-medium">${d.eventDate || d.savedAt || ''}</span>
-            </div>
-            <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
-          </div>`;
-      });
+      document.getElementById('mNotes').value = "";
+      if (type === 'CUSTOM') document.getElementById('mCustomQuestion').value = "";
+    }
+
+    function renderLocalMilestone(item) {
+      const container = document.getElementById('albumView');
+      const d = item.details;
+      container.innerHTML = `
+        <div class="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200 text-xs space-y-1.5 shadow-2xs">
+          <div class="flex justify-between items-center">
+            <span class="font-extrabold text-amber-950 text-sm">${item.event_tag} (ऑफ़लाइन सहेजा गया)</span>
+            <span class="text-[10px] text-amber-800 font-bold">Pending Sync</span>
+          </div>
+          <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
+        </div>` + container.innerHTML;
+    }
+
+    async function flushOfflineQueueToServer() {
+      const q = getOfflineQueue();
+      if (q.length === 0) return;
+
+      for (const item of q) {
+        try {
+          await fetch('/api/milestones/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+          });
+        } catch (e) {
+          console.error("Sync error", e);
+        }
+      }
+      setOfflineQueue([]);
+      triggerSyncAndReload();
+    }
+
+    async function triggerSyncAndReload() {
+      if (!activeSession.profileHash || !activeSession.passphrase) return;
+
+      await flushOfflineQueueToServer();
+
+      try {
+        const res = await fetch(`/api/milestones/get?prof_hash=${encodeURIComponent(activeSession.profileHash)}&pass=${encodeURIComponent(activeSession.passphrase)}`);
+        const list = await res.json();
+        currentSavedMilestones = list;
+        const container = document.getElementById('albumView');
+        container.innerHTML = "";
+
+        if (list.length === 0) {
+          container.innerHTML = `<p class="text-xs text-stone-400 text-center py-3">अभी कोई याद दर्ज नहीं है। ऊपर पहला माइलस्टोन जोड़ें!</p>`;
+          return;
+        }
+
+        list.forEach(item => {
+          const d = item.data;
+          container.innerHTML += `
+            <div class="p-3.5 bg-white rounded-xl border border-stone-200 text-xs space-y-1.5 shadow-2xs">
+              <div class="flex justify-between items-center">
+                <span class="font-extrabold text-amber-900 text-sm">${item.event_tag}</span>
+                <span class="text-[10px] text-stone-400 font-medium">${d.eventDate || d.savedAt || ''}</span>
+              </div>
+              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
+            </div>`;
+        });
+      } catch (err) {
+        console.warn("Could not fetch remote milestones:", err);
+      }
     }
 
     function downloadAlbumPDF() {
@@ -955,7 +1040,6 @@ HTML_PAGE = """<!DOCTYPE html>
       document.getElementById('pdfNakshatra').innerText = `${m.nakshatra || '-'} (${m.pada || '-'})`;
       document.getElementById('pdfAkshar').innerText = m.akshar || '-';
 
-      // Clone Chart
       const chartCloneContainer = document.getElementById('pdfChartClone');
       chartCloneContainer.innerHTML = "";
       const originalBox = document.getElementById('mainKundliBox');
@@ -965,7 +1049,6 @@ HTML_PAGE = """<!DOCTYPE html>
         chartCloneContainer.appendChild(clonedBox);
       }
 
-      // Render milestones
       const pdfMilestoneContainer = document.getElementById('pdfMilestoneList');
       pdfMilestoneContainer.innerHTML = "";
       if (currentSavedMilestones.length === 0) {
@@ -1030,7 +1113,7 @@ HTML_PAGE = """<!DOCTYPE html>
           });
           const result = await res.json();
           alert(`🎉 बैकअप सफलतापूर्वक रीस्टोर हो गया! (${result.imported} रिकॉर्ड जुड़े)`);
-          loadSavedMilestones();
+          triggerSyncAndReload();
         } catch (err) {
           alert("अमान्य बैकअप फ़ाइल: " + err.message);
         }
