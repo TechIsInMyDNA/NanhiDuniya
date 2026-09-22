@@ -945,7 +945,10 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": "ok", "imported": count}).encode('utf-8'))
 
 if __name__ == "__main__":
-    print("\n🌸 Nanhi Duniya Live at: http://localhost:8000")
-    server = HTTPServer(('0.0.0.0', 8000), SimpleServer)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    print(f"\n🌸 Nanhi Duniya Live at port: {port}")
+    server = HTTPServer(('0.0.0.0', port), SimpleServer)
     server.serve_forever()
+
 
