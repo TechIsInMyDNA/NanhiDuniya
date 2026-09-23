@@ -16,15 +16,54 @@ from TV import (
 
 init_db()
 
+PWA_MANIFEST = {
+    "name": "Nanhi Duniya - Vedic Janmapatri & Memory Vault",
+    "short_name": "NanhiDuniya",
+    "description": "Vedic Kundli, Scriptural Naming & Encrypted Lifetime Milestone Journal",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FAF7F2",
+    "theme_color": "#78350F",
+    "icons": [
+        {
+            "src": "https://api.iconify.design/twemoji:cherry-blossom.svg",
+            "sizes": "192x192 512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
+
+SERVICE_WORKER_JS = """
+const CACHE_NAME = 'nanhi-duniya-v1';
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(clients.claim());
+});
+self.addEventListener('fetch', (e) => {
+  // Let network handle dynamic API; cache fallback handled internally
+});
+"""
+
 HTML_PAGE = """<!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nanhi Duniya - Vedic Kundli & Baby Milestone Vault</title>
+  <title>Nanhi Duniya - Vedic Janmapatri & Lifetime Memory Vault</title>
+  
+  <!-- PWA Meta -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#78350F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nanhi Duniya">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Cinzel:wght@700&family=Rozha+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rozha+One&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FAF7F2; }
     .glass-card { background: rgba(255, 255, 255, 0.98); border: 1px solid #EFEAE1; }
@@ -35,9 +74,9 @@ HTML_PAGE = """<!DOCTYPE html>
     .grah-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 2px; }
     .grah-badge { background: #EEF2FF; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 1px 3px; border-radius: 4px; border: 1px solid #DBEAFE; }
 
-    /* ROYAL PRINT CANVAS (Exact A4 Fit without cut) */
+    /* Clean A4 Print Canvas */
     #pdfPrintCanvas {
-      width: 794px; /* Standard A4 pixel width at 96 DPI */
+      width: 794px;
       background: #FFFDF9;
       color: #1C1917;
       padding: 36px;
@@ -47,300 +86,322 @@ HTML_PAGE = """<!DOCTYPE html>
     }
   </style>
 </head>
-<body class="text-stone-800 pb-28">
+<body class="text-stone-800 pb-28 min-h-screen">
 
-  <!-- Header -->
-  <header class="py-3 px-4 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
-    <div class="max-w-md mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="text-xl font-black text-amber-900 tracking-tight flex items-center gap-1.5">
-          <span>🌸</span> Nanhi Duniya
-        </h1>
-        <div class="flex items-center gap-2 mt-0.5">
-          <p id="tSubHeader" class="text-[10px] text-stone-500">वैदिक जन्मपत्री • नामकरण • डिजिटल संदूक</p>
-          <span id="syncStatusBadge" class="text-[9px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded-full font-bold">● Offline Ready</span>
+  <!-- Desktop & Mobile Responsive Header -->
+  <header class="py-3.5 px-4 md:px-8 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shadow-2xs">
+          🌸
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-black text-amber-950 tracking-tight leading-tight">
+            Nanhi Duniya
+          </h1>
+          <div class="flex items-center gap-2 mt-0.5">
+            <p class="text-[10px] md:text-xs text-stone-500 font-medium hidden sm:block">Vedic Janmapatri • Scriptural Naming • Digital Lifetime Vault</p>
+            <span id="syncStatusBadge" class="text-[9px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-bold">● Offline Ready</span>
+          </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <div class="flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs font-bold">
-          <button id="langHiBtn" onclick="switchLanguage('hi')" class="px-2 py-1 rounded-lg bg-amber-800 text-white transition">हिंदी</button>
-          <button id="langEnBtn" onclick="switchLanguage('en')" class="px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition">EN</button>
-        </div>
-        <button id="navVaultBtn" onclick="toggleVaultModal()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-950 px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition">
-          <span>🔐</span> <span id="navVaultText">लॉगिन / वॉल्ट</span>
+      <div class="flex items-center gap-2.5">
+        <!-- PWA Install Prompt Button -->
+        <button id="pwaInstallBtn" onclick="installPWA()" class="hidden text-xs bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl font-bold items-center gap-1.5 transition">
+          <span>📲</span> <span class="hidden sm:inline">Install App</span>
+        </button>
+
+        <button id="navVaultBtn" onclick="toggleVaultModal()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition shadow-2xs active:scale-95">
+          <span>🔐</span> <span id="navVaultText">Login / Open Vault</span>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-md mx-auto p-4 space-y-5">
+  <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
 
-    <!-- Active Profile Banner -->
-    <div id="activeProfileBanner" class="hidden p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs shadow-xs">
-      <div>
-        <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-          <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider">क्लाउड वॉल्ट एक्टिव:</span>
+    <!-- Active Vault Profile Banner -->
+    <div id="activeProfileBanner" class="hidden p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs shadow-xs">
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></div>
+        <div>
+          <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">Active Zero-Knowledge Cloud Vault:</span>
+          <strong id="activeBabyNameDisplay" class="text-emerald-950 text-base md:text-lg font-black block"></strong>
         </div>
-        <strong id="activeBabyNameDisplay" class="text-emerald-950 text-base font-black mt-0.5 block"></strong>
       </div>
-      <button onclick="logoutVault()" class="text-xs bg-white border border-emerald-300 text-emerald-900 font-bold px-3 py-1.5 rounded-xl active:scale-95 transition shadow-2xs">
-        🔒 लॉगआउट
+      <button onclick="logoutVault()" class="text-xs bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-900 font-bold px-3 py-1.5 rounded-xl active:scale-95 transition shadow-2xs">
+        🔒 Lock & Logout
       </button>
     </div>
 
-    <!-- STEP 1: Birth Form -->
-    <div id="stepBirthForm" class="glass-card rounded-2xl p-5 shadow-sm space-y-3">
-      <div class="flex justify-between items-center">
-        <h2 id="tBirthHeader" class="text-base font-bold text-stone-800 flex items-center gap-2">
-          <span>✨</span> जन्म विवरण (Birth Details)
-        </h2>
-        <span id="tStep1Tag" class="text-[11px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">चरण 1</span>
-      </div>
+    <!-- MAIN TWO-COLUMN RESPONSIVE GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      <div class="space-y-2.5 text-xs">
-        <div>
-          <label id="tCityLabel" class="block font-semibold text-stone-600 mb-1">जन्म स्थान (City / District)</label>
-          <input type="text" id="bCity" value="Gondia" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label id="tDateLabel" class="block font-semibold text-stone-600 mb-1">जन्म तारीख (Date)</label>
-            <input type="date" id="bDate" value="2026-09-22" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none">
-          </div>
-          <div>
-            <label id="tTimeLabel" class="block font-semibold text-stone-600 mb-1">जन्म समय (Time)</label>
-            <input type="time" id="bTime" value="11:05" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none">
-          </div>
-        </div>
-
-        <button id="calcBtn" type="button" onclick="calculateKundli()" class="w-full py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
-          लग्न कुंडली एवं नामकरण अक्षर देखें
-        </button>
-      </div>
-
-      <!-- Kundli & Akshar Results -->
-      <div id="kundliResult" class="hidden mt-4 pt-3 border-t border-stone-200 space-y-4">
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200">
-            <span id="tLagnaLabel" class="text-[10px] text-stone-500 block">लग्न राशि</span>
-            <span id="resLagna" class="font-bold text-amber-900 text-sm"></span>
-          </div>
-          <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200">
-            <span id="tRashiLabel" class="text-[10px] text-stone-500 block">चन्द्र राशि</span>
-            <span id="resRashi" class="font-bold text-stone-800 text-sm"></span>
-          </div>
-        </div>
-
-        <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-1">
-          <div class="flex justify-between"><span id="tNakshatraLabel" class="text-stone-500">नक्षत्र:</span><span id="resNakshatra" class="font-bold"></span></div>
-          <div class="flex justify-between"><span id="tPadaLabel" class="text-stone-500">चरण:</span><span id="resPada" class="font-bold"></span></div>
-          <div class="flex justify-between items-center pt-1 border-t border-stone-200">
-            <span id="tAksharLabel" class="text-stone-700 font-bold">शास्त्रसम्मत नामकरण अक्षर:</span>
-            <span id="resAkshar" class="text-2xl font-black text-amber-800"></span>
-          </div>
-        </div>
-
-        <div class="text-center pt-2">
-          <p id="tChartTitle" class="text-xs font-bold text-stone-700 mb-2">Live Lagna Chart (लग्न एवं 9 ग्रह)</p>
-          <div id="mainKundliBox" class="kundli-box rounded-xl shadow-xs">
-            <svg class="kundli-svg" viewBox="0 0 280 280">
-              <line x1="0" y1="0" x2="280" y2="280" stroke="#854D0E" stroke-width="1.5" />
-              <line x1="0" y1="280" x2="280" y2="0" stroke="#854D0E" stroke-width="1.5" />
-              <polygon points="140,0 280,140 140,280 0,140" fill="none" stroke="#854D0E" stroke-width="1.5" />
-            </svg>
-            <div id="box1" class="h-item" style="top: 70px; left: 140px;"></div>
-            <div id="box2" class="h-item" style="top: 35px; left: 70px;"></div>
-            <div id="box3" class="h-item" style="top: 70px; left: 35px;"></div>
-            <div id="box4" class="h-item" style="top: 140px; left: 70px;"></div>
-            <div id="box5" class="h-item" style="top: 210px; left: 35px;"></div>
-            <div id="box6" class="h-item" style="top: 245px; left: 70px;"></div>
-            <div id="box7" class="h-item" style="top: 210px; left: 140px;"></div>
-            <div id="box8" class="h-item" style="top: 245px; left: 210px;"></div>
-            <div id="box9" class="h-item" style="top: 210px; left: 245px;"></div>
-            <div id="box10" class="h-item" style="top: 140px; left: 210px;"></div>
-            <div id="box11" class="h-item" style="top: 70px; left: 245px;"></div>
-            <div id="box12" class="h-item" style="top: 35px; left: 210px;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 2: Naming Engine -->
-    <div id="namesSection" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 id="tNamingTitle" class="text-base font-bold text-stone-800 flex items-center gap-1.5">
-            <span>👶</span> वैदिक नाम चयन
-          </h2>
-          <p id="tNamingSub" class="text-[11px] text-stone-500">अक्षर '<span id="currentLetterBadge" class="font-bold text-amber-900"></span>' से नाम चुनें</p>
-        </div>
-        <button id="tRegenBtn" type="button" onclick="fetchAINames()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-lg font-bold transition">
-          और नाम देखें ↻
-        </button>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2 bg-stone-100 p-1.5 rounded-xl text-xs font-bold text-center">
-        <button id="modeStrict" onclick="setNamingMode('strict')" class="py-2 rounded-lg bg-white text-amber-950 shadow-xs transition">
-          🎯 <span id="tStrictLabel">केवल शुद्ध अक्षर</span> (<span id="strictLetterText"></span>)
-        </button>
-        <button id="modeAnumati" onclick="setNamingMode('anumati')" class="py-2 rounded-lg text-stone-500 hover:text-stone-800 transition">
-          📜 <span id="tAnumatiLabel">अनुमति वर्ग</span> (<span id="anumatiLetterText"></span>)
-        </button>
-      </div>
-
-      <div class="flex gap-2">
-        <button id="btnAll" onclick="setGenderFilter('All')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-amber-800 text-white transition">सभी (All)</button>
-        <button id="btnBoy" onclick="setGenderFilter('Boy')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">👦 लड़के</button>
-        <button id="btnGirl" onclick="setGenderFilter('Girl')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">👧 लड़कियां</button>
-      </div>
-
-      <div id="namesList" class="space-y-2.5"></div>
-
-      <div class="pt-3 border-t border-stone-200 text-xs space-y-2">
-        <p id="tCustomPrompt" class="font-bold text-stone-700">या अपना पहले से तय किया हुआ नाम लिखें:</p>
-        <div class="flex gap-2">
-          <input type="text" id="customNameInput" placeholder="उदा. आरव, अनिका, विहान..." class="flex-1 p-2.5 rounded-xl border border-stone-300">
-          <button id="tCustomBtn" onclick="useCustomName()" class="px-4 py-2.5 bg-stone-900 text-white font-bold rounded-xl active:scale-95 transition">
-            चुनें
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3: Setup Profile Section -->
-    <div id="profileSetupSection" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-4 border-2 border-amber-300">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 id="tProfileLockTitle" class="text-base font-bold text-stone-900 flex items-center gap-1.5">
-            <span>🔐</span> शिशु प्रोफ़ाइल बनाएं एवं पासवर्ड सेट करें
-          </h2>
-          <p class="text-[11px] text-stone-500">Zero-Knowledge AES-256 Cloud Vault Encryption</p>
-        </div>
-        <span id="tStep2Tag" class="text-xs bg-emerald-100 text-emerald-900 font-bold px-2 py-0.5 rounded-md">चरण 2</span>
-      </div>
-
-      <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs space-y-1.5">
-        <div class="flex justify-between"><span id="tFinalNameLabel" class="text-stone-600">अंतिम चुना हुआ नाम:</span><span id="cardFinalName" class="font-black text-amber-900 text-sm"></span></div>
-        <div class="flex justify-between"><span id="tFinalDateLabel" class="text-stone-600">जन्म तारीख:</span><span id="cardFinalDate" class="font-bold text-stone-800"></span></div>
-        <div class="flex justify-between"><span id="tFinalTimeLabel" class="text-stone-600">जन्म समय:</span><span id="cardFinalTime" class="font-bold text-stone-800"></span></div>
-        <div class="flex justify-between"><span id="tFinalCityLabel" class="text-stone-600">जन्म स्थान:</span><span id="cardFinalCity" class="font-bold text-stone-800"></span></div>
-      </div>
-
-      <div class="space-y-2 text-xs">
-        <label id="tMasterPassPrompt" class="block font-bold text-stone-700">एक गुप्त मास्टर पासवर्ड (Family Secret Key) बनाएं:</label>
-        <input type="password" id="masterPasswordInput" placeholder="यह पासवर्ड केवल आपको पता होना चाहिए" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none">
-        <p id="tMasterPassNote" class="text-[10px] text-stone-500">✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।</p>
+      <!-- LEFT COLUMN: Kundli Generator & Astro Pillars (5 Cols on Desktop) -->
+      <div class="lg:col-span-5 space-y-6">
         
-        <button id="tLockProfileBtn" onclick="createBabyProfileVault()" class="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
-          प्रोफ़ाइल बनाएं एवं क्लाउड संदूक खोलें ➔
-        </button>
-      </div>
-    </div>
-
-    <!-- DEDICATED LIFETIME MILESTONE VAULT DASHBOARD (Memories First UI) -->
-    <div id="vaultDashboard" class="hidden glass-card rounded-2xl p-5 shadow-sm space-y-5">
-      <div class="flex justify-between items-center border-b border-stone-200 pb-3">
-        <div>
-          <h2 class="text-lg font-black text-amber-950 flex items-center gap-1.5">
-            <span>📖</span> <span id="vaultHeadingBabyName">शिशु</span> <span id="tVaultHeadingText">का डिजिटल स्मृति संदूक</span>
-          </h2>
-          <p id="tVaultSub" class="text-[11px] text-stone-500">जीवन की अनमोल यादें, प्रश्न एवं सम्पूर्ण जन्मपत्री</p>
-        </div>
-        <span class="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">Encrypted Vault</span>
-      </div>
-
-      <!-- Quick Kundli Meta Recap Card -->
-      <div id="vaultKundliCard" class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs grid grid-cols-2 gap-2">
-        <div><span class="text-[10px] text-stone-500 block">लग्न:</span><strong id="vLagnaText">-</strong></div>
-        <div><span class="text-[10px] text-stone-500 block">राशि:</span><strong id="vRashiText">-</strong></div>
-        <div><span class="text-[10px] text-stone-500 block">नक्षत्र:</span><strong id="vNakshatraText">-</strong></div>
-        <div><span class="text-[10px] text-stone-500 block">नामकरण अक्षर:</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
-      </div>
-
-      <!-- Add Milestone Form (Rich Journal Card) -->
-      <div class="p-4 bg-gradient-to-b from-stone-50 to-white rounded-2xl border border-stone-200 text-xs space-y-3 shadow-xs">
-        <p id="tAddMemoryTitle" class="font-bold text-stone-800 flex items-center gap-1.5">
-          <span>✍️</span> नई याद / सवाल संदूक में जोड़ें:
-        </p>
-        
-        <div class="flex gap-2">
-          <select id="milestoneType" onchange="toggleCustomQuestion()" class="w-1/2 p-2.5 rounded-xl border border-stone-300 bg-white font-semibold">
-            <option value="PRESET">तयशुदा माइलस्टोन</option>
-            <option value="CUSTOM">अपना नया सवाल / घटना</option>
-          </select>
-          <input type="date" id="mEventDate" class="w-1/2 p-2.5 rounded-xl border border-stone-300 bg-white">
-        </div>
-
-        <div id="presetSelectDiv">
-          <select id="mPresetTag" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white font-medium">
-            <option value="FIRST_SMILE">पहली बार मुस्कुराया (First Smile)</option>
-            <option value="FIRST_STEP">पहला कदम रखा (First Steps)</option>
-            <option value="FIRST_FOOD">पहला अन्नप्राशन (First Solid Food)</option>
-            <option value="FIRST_WORD">पहला शब्द क्या बोला (First Word)</option>
-            <option value="FIRST_TRIP">पहली यात्रा / ननिहाल आगमन</option>
-            <option value="FAV_TOY">पहला पसंदीदा खिलौना कौन सा था?</option>
-            <option value="SWEET_HABIT">बचपन की सबसे प्यारी आदत</option>
-          </select>
-        </div>
-
-        <div id="customQuestionDiv" class="hidden">
-          <input type="text" id="mCustomQuestion" placeholder="उदा. पहली बार बारिश देखकर कैसा लगा? या लोरी पर क्या प्रतिक्रिया दी?" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
-        </div>
-
-        <textarea id="mNotes" rows="3" placeholder="उस पल की पूरी याद, भावनाएं, किस्से व बातें विस्तार से लिखें..." class="w-full p-3 rounded-xl border border-stone-300 bg-white leading-relaxed outline-none focus:ring-2 focus:ring-amber-500"></textarea>
-
-        <button id="tSaveVaultBtn" type="button" onclick="saveNewMilestone()" class="w-full py-3 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
-          सहेजें एवं सुरक्षित लॉक करें (Save to Vault)
-        </button>
-      </div>
-
-      <!-- Actions Bar -->
-      <div class="pt-1 flex justify-between items-center">
-        <button id="tViewSavedBtn" type="button" onclick="triggerSyncAndReload()" class="text-xs text-amber-800 font-bold underline">
-          क्लाउड सिंक / रिफ्रेश ↻
-        </button>
-        <button id="tDownloadPdfBtn" type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-4 py-2 rounded-xl font-bold shadow-xs active:scale-95 transition flex items-center gap-1">
-          <span>📖</span> PDF एल्बम डाउनलोड
-        </button>
-      </div>
-
-      <!-- List of Milestones (Card-Deck Aesthetic Style) -->
-      <div id="albumView" class="space-y-3"></div>
-
-      <!-- Backup, Restore & Password-Protected DELETE Zone -->
-      <div class="pt-4 border-t border-stone-200 text-xs space-y-3">
-        <div class="flex gap-2">
-          <button onclick="downloadBackupFile()" class="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 transition">
-            📥 बैकअप डाउनलोड
-          </button>
-          <label class="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 text-center cursor-pointer transition">
-            📤 बैकअप रीस्टोर
-            <input type="file" id="restoreFileInput" accept=".json" onchange="uploadRestoreFile(event)" class="hidden">
-          </label>
-        </div>
-
-        <!-- DANGER ZONE: Delete Vault Protected by Master Password -->
-        <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-rose-950 space-y-2">
+        <!-- STEP 1: Birth Details Form -->
+        <div id="stepBirthForm" class="glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
           <div class="flex justify-between items-center">
-            <span class="font-bold flex items-center gap-1 text-[11px] text-rose-900">
-              <span>⚠️</span> डेंजर ज़ोन: पूरा संदूक मिटाएं (Delete Vault)
-            </span>
-            <button onclick="toggleDeletePrompt()" class="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-900 px-2 py-1 rounded font-bold transition">
-              विकल्प खोलें
+            <h2 class="text-base font-bold text-stone-800 flex items-center gap-2">
+              <span>✨</span> Birth Details (Janm Vivaran)
+            </h2>
+            <span class="text-[11px] bg-amber-100 text-amber-900 font-bold px-2.5 py-0.5 rounded-full">Step 1</span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block font-semibold text-stone-600 mb-1">Place of Birth (City / District)</label>
+              <input type="text" id="bCity" value="Gondia" placeholder="Enter City" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none font-medium">
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block font-semibold text-stone-600 mb-1">Birth Date</label>
+                <input type="date" id="bDate" value="2026-09-22" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none font-medium">
+              </div>
+              <div>
+                <label class="block font-semibold text-stone-600 mb-1">Birth Time</label>
+                <input type="time" id="bTime" value="11:05" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none font-medium">
+              </div>
+            </div>
+
+            <button id="calcBtn" type="button" onclick="calculateKundli()" class="w-full py-3 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
+              Generate Lagna Chart & Vedic Syllable
             </button>
           </div>
-          <div id="deleteVaultDiv" class="hidden pt-2 border-t border-rose-200 space-y-2">
-            <p class="text-[10px] text-rose-800">यह क्रिया इस बच्चे की संपूर्ण जन्मपत्री, सारे मील के पत्थर व यादों को सर्वर से हमेशा के लिए नष्ट कर देगी। पुष्टि के लिए अपना मास्टर पासवर्ड डालें:</p>
+
+          <!-- Kundli & Akshar Results -->
+          <div id="kundliResult" class="hidden mt-4 pt-4 border-t border-stone-200 space-y-4">
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200">
+                <span class="text-[10px] text-stone-500 block uppercase font-bold tracking-wider">Ascendant (Lagna)</span>
+                <span id="resLagna" class="font-extrabold text-amber-950 text-sm"></span>
+              </div>
+              <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200">
+                <span class="text-[10px] text-stone-500 block uppercase font-bold tracking-wider">Moon Sign (Rashi)</span>
+                <span id="resRashi" class="font-extrabold text-stone-800 text-sm"></span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-1.5">
+              <div class="flex justify-between"><span class="text-stone-500 font-medium">Nakshatra:</span><span id="resNakshatra" class="font-bold text-stone-900"></span></div>
+              <div class="flex justify-between"><span class="text-stone-500 font-medium">Quarter (Pada):</span><span id="resPada" class="font-bold text-stone-900"></span></div>
+              <div class="flex justify-between items-center pt-2 border-t border-stone-200">
+                <span class="text-stone-700 font-bold">Vedic Naming Syllable:</span>
+                <!-- Scriptural letter remains purely in Devanagari Hindi -->
+                <span id="resAkshar" class="text-3xl font-black text-amber-800 font-serif"></span>
+              </div>
+            </div>
+
+            <div class="text-center pt-2">
+              <p class="text-xs font-bold text-stone-700 mb-2.5">Live Vedic Lagna Chart (Ascendant & 9 Planets)</p>
+              <div id="mainKundliBox" class="kundli-box rounded-xl shadow-xs">
+                <svg class="kundli-svg" viewBox="0 0 280 280">
+                  <line x1="0" y1="0" x2="280" y2="280" stroke="#854D0E" stroke-width="1.5" />
+                  <line x1="0" y1="280" x2="280" y2="0" stroke="#854D0E" stroke-width="1.5" />
+                  <polygon points="140,0 280,140 140,280 0,140" fill="none" stroke="#854D0E" stroke-width="1.5" />
+                </svg>
+                <div id="box1" class="h-item" style="top: 70px; left: 140px;"></div>
+                <div id="box2" class="h-item" style="top: 35px; left: 70px;"></div>
+                <div id="box3" class="h-item" style="top: 70px; left: 35px;"></div>
+                <div id="box4" class="h-item" style="top: 140px; left: 70px;"></div>
+                <div id="box5" class="h-item" style="top: 210px; left: 35px;"></div>
+                <div id="box6" class="h-item" style="top: 245px; left: 70px;"></div>
+                <div id="box7" class="h-item" style="top: 210px; left: 140px;"></div>
+                <div id="box8" class="h-item" style="top: 245px; left: 210px;"></div>
+                <div id="box9" class="h-item" style="top: 210px; left: 245px;"></div>
+                <div id="box10" class="h-item" style="top: 140px; left: 210px;"></div>
+                <div id="box11" class="h-item" style="top: 70px; left: 245px;"></div>
+                <div id="box12" class="h-item" style="top: 35px; left: 210px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Naming Engine & Vault Journal (7 Cols on Desktop) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- STEP 2: Naming Engine -->
+        <div id="namesSection" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-base font-bold text-stone-800 flex items-center gap-1.5">
+                <span>👶</span> Vedic Name Selection
+              </h2>
+              <p class="text-[11px] text-stone-500">Suggested Names for Syllable '<span id="currentLetterBadge" class="font-bold text-amber-900"></span>'</p>
+            </div>
+            <button type="button" onclick="fetchAINames()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-xl font-bold transition">
+              Refresh Names ↻
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 bg-stone-100 p-1.5 rounded-xl text-xs font-bold text-center">
+            <button id="modeStrict" onclick="setNamingMode('strict')" class="py-2 rounded-lg bg-white text-amber-950 shadow-xs transition">
+              🎯 Strict Syllable (<span id="strictLetterText"></span>)
+            </button>
+            <button id="modeAnumati" onclick="setNamingMode('anumati')" class="py-2 rounded-lg text-stone-500 hover:text-stone-800 transition">
+              📜 Permitted Class (<span id="anumatiLetterText"></span>)
+            </button>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="btnAll" onclick="setGenderFilter('All')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-amber-800 text-white transition">All Names</button>
+            <button id="btnBoy" onclick="setGenderFilter('Boy')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">👦 Boys</button>
+            <button id="btnGirl" onclick="setGenderFilter('Girl')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">👧 Girls</button>
+          </div>
+
+          <div id="namesList" class="space-y-3"></div>
+
+          <div class="pt-3 border-t border-stone-200 text-xs space-y-2">
+            <p class="font-bold text-stone-700">Or type your own pre-decided name:</p>
             <div class="flex gap-2">
-              <input type="password" id="deleteConfirmPassword" placeholder="मास्टर पासवर्ड दर्ज करें" class="flex-1 p-2 bg-white rounded-lg border border-rose-300 outline-none">
-              <button onclick="confirmDeleteVault()" class="px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-lg font-bold text-xs active:scale-95 transition">
-                स्थाई रूप से मिटाएं
+              <input type="text" id="customNameInput" placeholder="e.g., Aarav, Anika, Vihaan..." class="flex-1 p-2.5 rounded-xl border border-stone-300">
+              <button onclick="useCustomName()" class="px-4 py-2.5 bg-stone-900 hover:bg-black text-white font-bold rounded-xl active:scale-95 transition">
+                Select
               </button>
             </div>
           </div>
         </div>
+
+        <!-- STEP 3: Setup Profile & Password Section -->
+        <div id="profileSetupSection" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4 border-2 border-amber-300">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-base font-bold text-stone-900 flex items-center gap-1.5">
+                <span>🔐</span> Create Baby Profile & Master Password
+              </h2>
+              <p class="text-[11px] text-stone-500">Zero-Knowledge AES-256 Vault Encryption</p>
+            </div>
+            <span class="text-xs bg-emerald-100 text-emerald-900 font-bold px-2.5 py-0.5 rounded-md">Step 2</span>
+          </div>
+
+          <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs space-y-1.5">
+            <div class="flex justify-between"><span class="text-stone-600">Chosen Baby Name:</span><span id="cardFinalName" class="font-black text-amber-900 text-sm"></span></div>
+            <div class="flex justify-between"><span class="text-stone-600">Birth Date:</span><span id="cardFinalDate" class="font-bold text-stone-800"></span></div>
+            <div class="flex justify-between"><span class="text-stone-600">Birth Time:</span><span id="cardFinalTime" class="font-bold text-stone-800"></span></div>
+            <div class="flex justify-between"><span class="text-stone-600">Birth Place:</span><span id="cardFinalCity" class="font-bold text-stone-800"></span></div>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <label class="block font-bold text-stone-700">Create a Secret Master Password (Family Key):</label>
+            <input type="password" id="masterPasswordInput" placeholder="Keep this password safe with your family" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none font-medium">
+            <p class="text-[10px] text-stone-500">✦ Neither other parents nor cloud admins can ever view your baby's memories without this key.</p>
+            
+            <button onclick="createBabyProfileVault()" class="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
+              Lock Profile & Open Milestone Vault ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- DEDICATED LIFETIME MILESTONE VAULT DASHBOARD -->
+        <div id="vaultDashboard" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-5">
+          <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+            <div>
+              <h2 class="text-lg font-black text-amber-950 flex items-center gap-1.5">
+                <span>📖</span> <span id="vaultHeadingBabyName">Baby</span>'s Lifetime Memory Vault
+              </h2>
+              <p class="text-[11px] text-stone-500">Scriptural Birth Journal, Questions & Personal Memories</p>
+            </div>
+            <span class="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">Encrypted Vault</span>
+          </div>
+
+          <!-- Quick Astro Pillars Strip inside Vault -->
+          <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div><span class="text-[10px] text-stone-500 block">Lagna</span><strong id="vLagnaText">-</strong></div>
+            <div><span class="text-[10px] text-stone-500 block">Rashi</span><strong id="vRashiText">-</strong></div>
+            <div><span class="text-[10px] text-stone-500 block">Nakshatra</span><strong id="vNakshatraText">-</strong></div>
+            <div><span class="text-[10px] text-stone-500 block">Syllable</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
+          </div>
+
+          <!-- Add Milestone Form -->
+          <div class="p-4 bg-gradient-to-b from-stone-50 to-white rounded-2xl border border-stone-200 text-xs space-y-3 shadow-xs">
+            <p class="font-bold text-stone-800 flex items-center gap-1.5">
+              <span>✍️</span> Record New Memory or Milestone:
+            </p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <select id="milestoneType" onchange="toggleCustomQuestion()" class="p-2.5 rounded-xl border border-stone-300 bg-white font-semibold">
+                <option value="PRESET">Standard Milestone</option>
+                <option value="CUSTOM">Custom Question / Special Moment</option>
+              </select>
+              <input type="date" id="mEventDate" class="p-2.5 rounded-xl border border-stone-300 bg-white">
+            </div>
+
+            <div id="presetSelectDiv">
+              <select id="mPresetTag" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white font-medium">
+                <option value="FIRST_SMILE">First Sweet Smile (पहली मुस्कान)</option>
+                <option value="FIRST_STEP">First Steps Taken (पहला कदम)</option>
+                <option value="FIRST_FOOD">First Solid Food / Annaprashan (अन्नप्राशन)</option>
+                <option value="FIRST_WORD">First Words Spoken (पहला शब्द)</option>
+                <option value="FIRST_TRIP">First Family Vacation / Grandparents Home</option>
+                <option value="FAV_TOY">First Favorite Toy & Games</option>
+                <option value="SWEET_HABIT">Cutest Sleeping & Smiling Habit</option>
+              </select>
+            </div>
+
+            <div id="customQuestionDiv" class="hidden">
+              <input type="text" id="mCustomQuestion" placeholder="e.g., How did baby react to first rain? Or first song they loved?" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+            </div>
+
+            <textarea id="mNotes" rows="3" placeholder="Describe the emotions, stories, family reactions and details of this cherished moment..." class="w-full p-3 rounded-xl border border-stone-300 bg-white leading-relaxed outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+
+            <button type="button" onclick="saveNewMilestone()" class="w-full py-3 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
+              Save Securely to Vault (AES-256)
+            </button>
+          </div>
+
+          <!-- Actions Bar -->
+          <div class="pt-1 flex justify-between items-center">
+            <button type="button" onclick="triggerSyncAndReload()" class="text-xs text-amber-800 font-bold underline">
+              Sync / Refresh Memories ↻
+            </button>
+            <button type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-4 py-2 rounded-xl font-bold shadow-xs active:scale-95 transition flex items-center gap-1.5">
+              <span>📖</span> Export Royal Album PDF
+            </button>
+          </div>
+
+          <!-- Milestone Journal Feed -->
+          <div id="albumView" class="space-y-3"></div>
+
+          <!-- Utility & Password-Protected Delete Section -->
+          <div class="pt-4 border-t border-stone-200 text-xs space-y-3">
+            <div class="flex gap-2">
+              <button onclick="downloadBackupFile()" class="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 transition">
+                📥 Download Encrypted Backup (.json)
+              </button>
+              <label class="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 text-center cursor-pointer transition">
+                📤 Restore Backup (.json)
+                <input type="file" id="restoreFileInput" accept=".json" onchange="uploadRestoreFile(event)" class="hidden">
+              </label>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-rose-950 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="font-bold flex items-center gap-1.5 text-[11px] text-rose-900">
+                  <span>⚠️</span> Danger Zone: Delete Profile & Vault
+                </span>
+                <button onclick="toggleDeletePrompt()" class="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-900 px-2.5 py-1 rounded-lg font-bold transition">
+                  Toggle Options
+                </button>
+              </div>
+              <div id="deleteVaultDiv" class="hidden pt-2 border-t border-rose-200 space-y-2">
+                <p class="text-[10px] text-rose-800 leading-relaxed">This action will permanently wipe this baby's Janmapatri and all encrypted memories from the server. Enter Master Password to confirm:</p>
+                <div class="flex gap-2">
+                  <input type="password" id="deleteConfirmPassword" placeholder="Enter Master Password" class="flex-1 p-2 bg-white rounded-lg border border-rose-300 outline-none">
+                  <button onclick="confirmDeleteVault()" class="px-3.5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-lg font-bold text-xs active:scale-95 transition">
+                    Delete Permanently
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
     </div>
@@ -348,46 +409,46 @@ HTML_PAGE = """<!DOCTYPE html>
   </main>
 
   <!-- Login/Unlock Modal -->
-  <div id="loginModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-xl">
+  <div id="loginModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-stone-200">
       <div class="flex justify-between items-center">
         <h3 class="text-base font-bold text-stone-900 flex items-center gap-1.5">
-          <span>🔑</span> बच्चे का वॉल्ट खोलें (Unlock Vault)
+          <span>🔑</span> Unlock Baby Vault
         </h3>
         <button onclick="toggleVaultModal()" class="text-stone-400 hover:text-stone-700 font-black text-sm">✕</button>
       </div>
-      <p class="text-xs text-stone-500">डेटा क्लियर होने या दूसरे फ़ोन पर खोलने के लिए बच्चे का नाम व मास्टर पासवर्ड डालें:</p>
+      <p class="text-xs text-stone-500 leading-relaxed">Enter your baby's exact name and family master password to unlock and sync all encrypted memories:</p>
 
-      <div class="space-y-2.5 text-xs">
+      <div class="space-y-3 text-xs">
         <div>
-          <label class="block font-semibold text-stone-700 mb-1">शिशु का नाम (Baby Name)</label>
-          <input type="text" id="loginBabyName" placeholder="उदा. आरव" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none">
+          <label class="block font-semibold text-stone-700 mb-1">Baby Name</label>
+          <input type="text" id="loginBabyName" placeholder="e.g., Aarav" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none focus:ring-2 focus:ring-amber-500 font-medium">
         </div>
         <div>
-          <label class="block font-semibold text-stone-700 mb-1">मास्टर पासवर्ड (Master Password)</label>
-          <input type="password" id="loginPassword" placeholder="पासवर्ड दर्ज करें" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none">
+          <label class="block font-semibold text-stone-700 mb-1">Master Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none focus:ring-2 focus:ring-amber-500 font-medium">
         </div>
-        <button onclick="loginToVault()" class="w-full py-2.5 bg-amber-900 text-white rounded-xl font-bold active:scale-95 transition">
-          वॉल्ट अनलॉक करें ➔
+        <button onclick="loginToVault()" class="w-full py-3 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
+          Unlock Vault ➔
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ROYAL CLEAN ALBUM PRINT CANVAS (Exact Full Flow & Zero Cut-off) -->
+  <!-- ROYAL CLEAN ALBUM PRINT CANVAS -->
   <div style="position: absolute; left: -9999px; top: 0;">
     <div id="pdfPrintCanvas">
       
-      <!-- Royal Vedic Header -->
+      <!-- Royal Header -->
       <div style="text-align: center; border-bottom: 2px solid #92400E; padding-bottom: 12px; margin-bottom: 18px;">
-        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">वैदिक जन्मपत्री एवं जीवन स्मृति संदूक</span>
-        <h1 style="font-family: 'Rozha One', serif; font-size: 28px; color: #78350F; margin: 4px 0 0 0;">🌸 नन्ही दुनिया (Nanhi Duniya)</h1>
+        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">Official Vedic Janmapatri & Lifetime Milestone Journal</span>
+        <h1 style="font-family: 'Rozha One', serif; font-size: 28px; color: #78350F; margin: 4px 0 0 0;">🌸 Nanhi Duniya</h1>
       </div>
 
-      <!-- Golden Baby Identity Strip -->
+      <!-- Identity Strip -->
       <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; border: 1.5px solid #F59E0B; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px;">
         <div>
-          <span style="font-size: 10px; color: #92400E; font-weight: bold; text-transform: uppercase;">शिशु का नाम</span>
+          <span style="font-size: 10px; color: #92400E; font-weight: bold; text-transform: uppercase;">Baby Name</span>
           <h2 id="pdfBabyName" style="font-size: 22px; font-weight: 800; color: #78350F; margin: 2px 0 0 0;"></h2>
         </div>
         <div style="text-align: right; font-size: 11px; color: #78350F; line-height: 1.4;">
@@ -400,34 +461,34 @@ HTML_PAGE = """<!DOCTYPE html>
       <!-- Astrological 4-Pillar Grid -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; text-align: center; font-size: 11px;">
         <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
-          <span style="color: #78716C; font-size: 9px; display: block;">लग्न राशि</span>
+          <span style="color: #78716C; font-size: 9px; display: block;">Ascendant (Lagna)</span>
           <strong id="pdfLagna" style="color: #78350F; font-size: 13px;"></strong>
         </div>
         <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
-          <span style="color: #78716C; font-size: 9px; display: block;">चन्द्र राशि</span>
+          <span style="color: #78716C; font-size: 9px; display: block;">Moon Sign (Rashi)</span>
           <strong id="pdfRashi" style="color: #1C1917; font-size: 13px;"></strong>
         </div>
         <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
-          <span style="color: #78716C; font-size: 9px; display: block;">नक्षत्र एवं चरण</span>
+          <span style="color: #78716C; font-size: 9px; display: block;">Nakshatra & Pada</span>
           <strong id="pdfNakshatra" style="color: #1C1917; font-size: 12px;"></strong>
         </div>
         <div style="background: #FEF3C7; padding: 8px; border-radius: 6px; border: 1.5px solid #FCD34D;">
-          <span style="color: #92400E; font-size: 9px; display: block;">नामकरण अक्षर</span>
+          <span style="color: #92400E; font-size: 9px; display: block;">Naming Syllable</span>
           <strong id="pdfAkshar" style="color: #78350F; font-size: 18px;"></strong>
         </div>
       </div>
 
-      <!-- Lagna Chart Render (Scaled correctly to never cut) -->
+      <!-- Lagna Chart Render (Scaled correctly without cut-off) -->
       <div style="text-align: center; margin-bottom: 24px;">
-        <p style="font-size: 12px; font-weight: bold; color: #78350F; margin-bottom: 8px; letter-spacing: 0.5px;">शास्त्रसम्मत लग्न चक्र (Ascendant & 9 Planets)</p>
+        <p style="font-size: 12px; font-weight: bold; color: #78350F; margin-bottom: 8px; letter-spacing: 0.5px;">Scriptural Vedic Lagna Chakra (9 Planetary Glyphs)</p>
         <div id="pdfChartClone" style="display: inline-block;"></div>
       </div>
 
       <!-- Milestone Journal Cards -->
       <div style="border-top: 2px dashed #B45309; padding-top: 18px;">
         <div style="text-align: center; margin-bottom: 12px;">
-          <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0;">📖 अनमोल यादें एवं जीवन के मील के पत्थर</h3>
-          <p style="font-size: 10px; color: #78716C; margin: 2px 0 0 0;">(Parent's Recorded Memories, Questions & Cherished Milestones)</p>
+          <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0;">📖 Lifetime Milestone Journal & Memories</h3>
+          <p style="font-size: 10px; color: #78716C; margin: 2px 0 0 0;">(Parent's Recorded Stories, Questions & Moments)</p>
         </div>
         <div id="pdfMilestoneList" style="font-size: 11px;"></div>
       </div>
@@ -440,11 +501,12 @@ HTML_PAGE = """<!DOCTYPE html>
   </div>
 
   <script>
-    let currentLang = 'hi';
+    let currentLang = 'en';
     let currentLetter = "खी";
     let selectedGender = "All";
     let namingMode = "strict";
     let currentSavedMilestones = [];
+    let deferredPrompt = null;
 
     let activeSession = {
       profileHash: localStorage.getItem('nd_prof_hash') || '',
@@ -460,120 +522,46 @@ HTML_PAGE = """<!DOCTYPE html>
       localStorage.setItem('nd_offline_queue', JSON.stringify(q));
     }
 
-    const UI_STRINGS = {
-      hi: {
-        subHeader: "वैदिक जन्मपत्री • नामकरण • डिजिटल संदूक",
-        birthHeader: "✨ जन्म विवरण (Birth Details)",
-        step1Tag: "चरण 1",
-        cityLabel: "जन्म स्थान (City / District)",
-        dateLabel: "जन्म तारीख (Date)",
-        timeLabel: "जन्म समय (Time)",
-        calcBtn: "लग्न कुंडली एवं नामकरण अक्षर देखें",
-        lagnaLabel: "लग्न राशि",
-        rashiLabel: "चन्द्र राशि",
-        nakshatraLabel: "नक्षत्र:",
-        padaLabel: "चरण:",
-        aksharLabel: "शास्त्रसम्मत नामकरण अक्षर:",
-        chartTitle: "Live Lagna Chart (लग्न एवं 9 ग्रह)",
-        namingTitle: "👶 वैदिक नाम चयन",
-        namingSub: "अक्षर '<span id='currentLetterBadge' class='font-bold text-amber-900'>" + currentLetter + "</span>' से नाम चुनें",
-        regenBtn: "और नाम देखें ↻",
-        strictLabel: "केवल शुद्ध अक्षर",
-        anumatiLabel: "अनुमति वर्ग",
-        btnAll: "सभी (All)",
-        btnBoy: "👦 लड़के",
-        btnGirl: "👧 लड़कियां",
-        customPrompt: "या अपना पहले से तय किया हुआ नाम लिखें:",
-        customPlaceholder: "उदा. आरव, अनिका, विहान...",
-        customBtn: "चुनें",
-        chooseThisNameBtn: "👑 यह नाम चुनें",
-        meaningLabel: "अर्थ:",
-        sigLabel: "ज्योतिषीय महत्व:",
-        boyTag: "👦 लड़का",
-        girlTag: "👧 लड़की",
-        profileLockTitle: "🔐 शिशु प्रोफ़ाइल बनाएं एवं पासवर्ड सेट करें",
-        step2Tag: "चरण 2",
-        finalNameLabel: "अंतिम चुना हुआ नाम:",
-        finalDateLabel: "जन्म तारीख:",
-        finalTimeLabel: "जन्म समय:",
-        finalCityLabel: "जन्म स्थान:",
-        masterPassPrompt: "एक गुप्त मास्टर पासवर्ड (Family Secret Key) बनाएं:",
-        masterPassPlaceholder: "यह पासवर्ड केवल आपको पता होना चाहिए",
-        masterPassNote: "✦ यह पासवर्ड आपके सिवा कोई दूसरा पैरेंट या एडमिन भी नहीं देख सकता।",
-        lockProfileBtn: "प्रोफ़ाइल बनाएं एवं क्लाउड संदूक खोलें ➔",
-        vaultHeadingText: "का डिजिटल स्मृति संदूक",
-        vaultSub: "जीवन की अनमोल यादें, प्रश्न एवं सम्पूर्ण जन्मपत्री",
-        addMemoryTitle: "नई याद / सवाल संदूक में जोड़ें:",
-        notesPlaceholder: "उस पल की पूरी याद, भावनाएं, किस्से व बातें विस्तार से लिखें...",
-        saveVaultBtn: "सहेजें एवं सुरक्षित लॉक करें (Save to Vault)",
-        viewSavedBtn: "क्लाउड सिंक / रिफ्रेश ↻",
-        downloadPdfBtn: "📖 PDF एल्बम डाउनलोड"
-      },
-      en: {
-        subHeader: "Vedic Janmapatri • Naming • Digital Memory Vault",
-        birthHeader: "✨ Birth Details (Janm Vivaran)",
-        step1Tag: "Step 1",
-        cityLabel: "Birth Place (City / District)",
-        dateLabel: "Birth Date",
-        timeLabel: "Birth Time",
-        calcBtn: "Generate Lagna Chart & Vedic Syllable",
-        lagnaLabel: "Ascendant (Lagna)",
-        rashiLabel: "Moon Sign (Rashi)",
-        nakshatraLabel: "Nakshatra:",
-        padaLabel: "Quarter (Pada):",
-        aksharLabel: "Scriptural Naming Syllable:",
-        chartTitle: "Live Lagna Chart (Ascendant & 9 Planets)",
-        namingTitle: "👶 Vedic Name Selection",
-        namingSub: "Suggested Names for Syllable '<span id='currentLetterBadge' class='font-bold text-amber-900'>" + currentLetter + "</span>'",
-        regenBtn: "Generate More ↻",
-        strictLabel: "Strict Syllable",
-        anumatiLabel: "Permitted Class",
-        btnAll: "All",
-        btnBoy: "👦 Boys",
-        btnGirl: "👧 Girls",
-        customPrompt: "Or enter your pre-decided name:",
-        customPlaceholder: "e.g., Aarav, Anika, Vihaan...",
-        customBtn: "Select",
-        chooseThisNameBtn: "👑 Select This Name",
-        meaningLabel: "Meaning:",
-        sigLabel: "Significance:",
-        boyTag: "👦 Boy",
-        girlTag: "👧 Girl",
-        profileLockTitle: "🔐 Create Baby Profile & Set Password",
-        step2Tag: "Step 2",
-        finalNameLabel: "Final Chosen Name:",
-        finalDateLabel: "Birth Date:",
-        finalTimeLabel: "Birth Time:",
-        finalCityLabel: "Birth Place:",
-        masterPassPrompt: "Create a Master Password (Family Secret Key):",
-        masterPassPlaceholder: "This password should only be known to you",
-        masterPassNote: "✦ Neither other parents nor admins can ever access this password.",
-        lockProfileBtn: "Lock Profile & Open Milestone Vault ➔",
-        vaultHeadingText: "'s Digital Vault",
-        vaultSub: "Lifetime Memories, Personal Q&A and Vedic Birth Journal",
-        addMemoryTitle: "Add Question & Memory to Vault:",
-        notesPlaceholder: "Record the emotions, memories and story in detail...",
-        saveVaultBtn: "Save Securely to Vault",
-        viewSavedBtn: "Cloud Sync / Refresh ↻",
-        downloadPdfBtn: "📖 Export PDF Album"
-      }
-    };
+    // PWA Service Worker Registration & Install Hook
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW error:', err));
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('pwaInstallBtn');
+      if (btn) btn.classList.remove('hidden');
+    });
+
+    function installPWA() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          document.getElementById('pwaInstallBtn').classList.add('hidden');
+        }
+        deferredPrompt = null;
+      });
+    }
 
     window.addEventListener('online', () => {
       document.getElementById('syncStatusBadge').innerText = "● Cloud Connected";
-      document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold";
+      document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
       flushOfflineQueueToServer();
     });
 
     window.addEventListener('offline', () => {
       document.getElementById('syncStatusBadge').innerText = "● Offline Mode (Queued)";
-      document.getElementById('syncStatusBadge').className = "text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold";
+      document.getElementById('syncStatusBadge').className = "text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold";
     });
 
     window.addEventListener('DOMContentLoaded', () => {
       if (navigator.onLine) {
         document.getElementById('syncStatusBadge').innerText = "● Cloud Connected";
-        document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold";
+        document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
       }
       if (activeSession.profileHash && activeSession.passphrase) {
         showVaultDashboard();
@@ -590,9 +578,9 @@ HTML_PAGE = """<!DOCTYPE html>
 
     async function confirmDeleteVault() {
       const pwd = document.getElementById('deleteConfirmPassword').value.trim();
-      if (!pwd) return alert("कृपया अपना मास्टर पासवर्ड दर्ज करें");
+      if (!pwd) return alert("Please enter master password to proceed");
 
-      if (!confirm("⚠️ क्या आप निश्चित रूप से इस बच्चे का पूरा वॉल्ट और सारी यादें हमेशा के लिए मिटाना चाहते हैं? यह क्रिया वापस नहीं होगी!")) {
+      if (!confirm("Are you sure you want to permanently delete this baby vault and all milestones? This cannot be undone!")) {
         return;
       }
 
@@ -607,92 +595,25 @@ HTML_PAGE = """<!DOCTYPE html>
         });
         const data = await res.json();
         if (data.status === 'ok') {
-          alert("🗑️ बच्चे का वॉल्ट और सारी यादें सर्वर से हमेशा के लिए सुरक्षित मिटा दी गई हैं।");
+          alert("Vault permanently deleted from server.");
           logoutVault();
         } else {
-          alert("त्रुटि: " + data.message);
+          alert("Error: " + data.message);
         }
       } catch (e) {
-        alert("सर्वर से संपर्क नहीं हो पाया: " + e.message);
+        alert("Server connection failed: " + e.message);
       }
     }
 
     function switchLanguage(lang) {
       currentLang = lang;
-      if (lang === 'hi') {
-        document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
-        document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
-      } else {
+      if (lang === 'en') {
         document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
         document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
-      }
-      const s = UI_STRINGS[lang];
-      document.getElementById('tSubHeader').innerText = s.subHeader;
-      document.getElementById('tBirthHeader').innerHTML = `<span>✨</span> ${s.birthHeader}`;
-      document.getElementById('tStep1Tag').innerText = s.step1Tag;
-      document.getElementById('tCityLabel').innerText = s.cityLabel;
-      document.getElementById('tDateLabel').innerText = s.dateLabel;
-      document.getElementById('tTimeLabel').innerText = s.timeLabel;
-      document.getElementById('calcBtn').innerText = s.calcBtn;
-      document.getElementById('tLagnaLabel').innerText = s.lagnaLabel;
-      document.getElementById('tRashiLabel').innerText = s.rashiLabel;
-      document.getElementById('tNakshatraLabel').innerText = s.nakshatraLabel;
-      document.getElementById('tPadaLabel').innerText = s.padaLabel;
-      document.getElementById('tAksharLabel').innerText = s.aksharLabel;
-      document.getElementById('tChartTitle').innerText = s.chartTitle;
-
-      document.getElementById('tNamingTitle').innerHTML = `<span>👶</span> ${s.namingTitle}`;
-      document.getElementById('tNamingSub').innerHTML = lang === 'hi' 
-        ? `अक्षर '<span id='currentLetterBadge' class='font-bold text-amber-900'>${currentLetter}</span>' से नाम चुनें`
-        : `Suggested Names for Syllable '<span id='currentLetterBadge' class='font-bold text-amber-900'>${currentLetter}</span>'`;
-      document.getElementById('tRegenBtn').innerText = s.regenBtn;
-      document.getElementById('tStrictLabel').innerText = s.strictLabel;
-      document.getElementById('tAnumatiLabel').innerText = s.anumatiLabel;
-      document.getElementById('btnAll').innerText = s.btnAll;
-      document.getElementById('btnBoy').innerText = s.btnBoy;
-      document.getElementById('btnGirl').innerText = s.btnGirl;
-      document.getElementById('tCustomPrompt').innerText = s.customPrompt;
-      document.getElementById('customNameInput').placeholder = s.customPlaceholder;
-      document.getElementById('tCustomBtn').innerText = s.customBtn;
-
-      document.getElementById('tProfileLockTitle').innerHTML = `<span>🔐</span> ${s.profileLockTitle}`;
-      document.getElementById('tStep2Tag').innerText = s.step2Tag;
-      document.getElementById('tFinalNameLabel').innerText = s.finalNameLabel;
-      document.getElementById('tFinalDateLabel').innerText = s.finalDateLabel;
-      document.getElementById('tFinalTimeLabel').innerText = s.finalTimeLabel;
-      document.getElementById('tFinalCityLabel').innerText = s.finalCityLabel;
-      document.getElementById('tMasterPassPrompt').innerText = s.masterPassPrompt;
-      document.getElementById('masterPasswordInput').placeholder = s.masterPassPlaceholder;
-      document.getElementById('tMasterPassNote').innerText = s.masterPassNote;
-      document.getElementById('tLockProfileBtn').innerText = s.lockProfileBtn;
-
-      document.getElementById('tVaultHeadingText').innerText = s.vaultHeadingText;
-      document.getElementById('tVaultSub').innerText = s.vaultSub;
-      document.getElementById('tAddMemoryTitle').innerText = s.addMemoryTitle;
-      document.getElementById('mNotes').placeholder = s.notesPlaceholder;
-      document.getElementById('tSaveVaultBtn').innerText = s.saveVaultBtn;
-      document.getElementById('tViewSavedBtn').innerText = s.viewSavedBtn;
-      document.getElementById('tDownloadPdfBtn').innerText = s.downloadPdfBtn;
-
-      const sel = document.getElementById('mPresetTag');
-      if (lang === 'en') {
-        sel.options[0].text = "First Smile";
-        sel.options[1].text = "First Steps";
-        sel.options[2].text = "First Solid Food (Annaprashan)";
-        sel.options[3].text = "First Word Spoken";
-        sel.options[4].text = "First Family Trip";
-        document.getElementById('milestoneType').options[0].text = "Standard Milestone";
-        document.getElementById('milestoneType').options[1].text = "Custom Question / Memory";
       } else {
-        sel.options[0].text = "पहली बार मुस्कुराया (First Smile)";
-        sel.options[1].text = "पहला कदम रखा (First Steps)";
-        sel.options[2].text = "पहला अन्नप्राशन (First Solid Food)";
-        sel.options[3].text = "पहला शब्द क्या बोला (First Word)";
-        sel.options[4].text = "पहली यात्रा / ननिहाल आगमन";
-        document.getElementById('milestoneType').options[0].text = "तयशुदा माइलस्टोन";
-        document.getElementById('milestoneType').options[1].text = "अपना नया सवाल / घटना";
+        document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
+        document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
       }
-
       fetchAINames();
     }
 
@@ -725,9 +646,9 @@ HTML_PAGE = """<!DOCTYPE html>
       const bDate = document.getElementById('bDate').value;
       const bTime = document.getElementById('bTime').value;
 
-      if (!bDate || !bTime) return alert("Date aur time dalein");
+      if (!bDate || !bTime) return alert("Please enter birth date and time");
 
-      btn.innerText = "Kundli Banayi Ja Rahi Hai...";
+      btn.innerText = "Calculating Kundli...";
       btn.disabled = true;
 
       try {
@@ -739,10 +660,10 @@ HTML_PAGE = """<!DOCTYPE html>
         const res = await fetch(`/api/kundli?y=${year}&m=${month}&d=${day}&h=${hour}&min=${minute}&city=${encodeURIComponent(bCity)}`);
         const data = await res.json();
 
-        document.getElementById('resLagna').innerText = `${data.lagna_hindi} (${data.lagna_english})`;
-        document.getElementById('resRashi').innerText = `${data.rashi_hindi} (${data.rashi_english})`;
+        document.getElementById('resLagna').innerText = `${data.lagna_english} (${data.lagna_hindi})`;
+        document.getElementById('resRashi').innerText = `${data.rashi_english} (${data.rashi_hindi})`;
         document.getElementById('resNakshatra').innerText = data.nakshatra_hindi;
-        document.getElementById('resPada').innerText = `Charan ${data.charan}`;
+        document.getElementById('resPada').innerText = `Pada ${data.charan}`;
         document.getElementById('resAkshar').innerText = data.naam_akshar_hindi;
 
         currentLetter = data.naam_akshar_hindi;
@@ -772,7 +693,7 @@ HTML_PAGE = """<!DOCTYPE html>
       } catch (err) {
         alert("Error: " + err.message);
       } finally {
-        btn.innerText = UI_STRINGS[currentLang].calcBtn;
+        btn.innerText = "Generate Lagna Chart & Vedic Syllable";
         btn.disabled = false;
       }
     }
@@ -780,7 +701,6 @@ HTML_PAGE = """<!DOCTYPE html>
     async function fetchAINames() {
       const listDiv = document.getElementById('namesList');
       listDiv.innerHTML = "";
-      const s = UI_STRINGS[currentLang];
 
       try {
         const res = await fetch(`/api/ai-names?letter=${encodeURIComponent(currentLetter)}&gender=${encodeURIComponent(selectedGender)}&mode=${encodeURIComponent(namingMode)}`);
@@ -789,24 +709,24 @@ HTML_PAGE = """<!DOCTYPE html>
         names.forEach(n => {
           const isBoy = n.gender === 'Boy';
           const genderBadge = isBoy
-            ? `<span class="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded-full font-bold border border-blue-200">${s.boyTag}</span>`
-            : `<span class="text-[10px] bg-rose-50 text-rose-800 px-2 py-0.5 rounded-full font-bold border border-rose-200">${s.girlTag}</span>`;
+            ? `<span class="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded-full font-bold border border-blue-200">👦 Boy</span>`
+            : `<span class="text-[10px] bg-rose-50 text-rose-800 px-2 py-0.5 rounded-full font-bold border border-rose-200">👧 Girl</span>`;
 
           listDiv.innerHTML += `
-            <div class="p-3.5 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+            <div class="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-2 hover:border-amber-300 transition">
               <div class="flex justify-between items-center">
                 <div>
-                  <h3 class="text-base font-extrabold text-stone-900">${n.name_hi} <span class="text-xs font-medium text-stone-500 font-sans">(${n.name_en})</span></h3>
+                  <h3 class="text-base font-extrabold text-stone-900">${n.name_hi} <span class="text-xs font-semibold text-stone-500 font-sans">(${n.name_en})</span></h3>
                   <div class="flex gap-1.5 mt-1">${genderBadge}</div>
                 </div>
                 <button onclick="finalizeName('${n.name_hi}')" class="px-3 py-1.5 rounded-xl border border-amber-400 text-amber-950 bg-amber-100 hover:bg-amber-200 text-xs font-black shadow-xs active:scale-95 transition">
-                  ${s.chooseThisNameBtn}
+                  👑 Select Name
                 </button>
               </div>
 
-              <div class="pt-1.5 border-t border-stone-100 text-xs space-y-1">
-                <p class="text-stone-700"><span class="font-bold text-stone-900">${s.meaningLabel}</span> ${n.meaning}</p>
-                ${n.significance ? `<p class="text-amber-900 font-medium"><span class="font-bold">${s.sigLabel}</span>${n.significance}</p>` : ''}
+              <div class="pt-2 border-t border-stone-100 text-xs space-y-1">
+                <p class="text-stone-700"><span class="font-bold text-stone-900">Meaning:</span> ${n.meaning}</p>
+                ${n.significance ? `<p class="text-amber-900 font-medium"><span class="font-bold">Significance:</span> ${n.significance}</p>` : ''}
               </div>
             </div>
           `;
@@ -818,7 +738,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
     function useCustomName() {
       const cName = document.getElementById('customNameInput').value.trim();
-      if (!cName) return alert("कृपया नाम दर्ज करें");
+      if (!cName) return alert("Please enter a name");
       finalizeName(cName);
     }
 
@@ -836,8 +756,8 @@ HTML_PAGE = """<!DOCTYPE html>
       const babyName = document.getElementById('cardFinalName').innerText.trim();
       const pwd = document.getElementById('masterPasswordInput').value.trim();
 
-      if (!babyName) return alert("कृपया नाम चुनें");
-      if (!pwd || pwd.length < 4) return alert("पासवर्ड कम से कम 4 अक्षरों का रखें");
+      if (!babyName) return alert("Please select or type a name first");
+      if (!pwd || pwd.length < 4) return alert("Password must be at least 4 characters");
 
       const meta = {
         baby_name: babyName,
@@ -874,13 +794,13 @@ HTML_PAGE = """<!DOCTYPE html>
           sessionStorage.setItem('nd_passphrase', pwd);
           localStorage.setItem('nd_baby_meta', JSON.stringify(data.meta));
 
-          alert("🎉 बच्चे की प्रोफ़ाइल क्लाउड सर्वर पर सुरक्षित रजिस्टर हो गई!");
+          alert("🎉 Baby profile created and cloud vault locked successfully!");
           showVaultDashboard();
         } else {
-          alert("त्रुटि: " + data.message);
+          alert("Error: " + data.message);
         }
       } catch (err) {
-        alert("इंटरनेट कनेक्शन चेक करें: " + err.message);
+        alert("Check connection: " + err.message);
       }
     }
 
@@ -888,7 +808,7 @@ HTML_PAGE = """<!DOCTYPE html>
       const babyName = document.getElementById('loginBabyName').value.trim();
       const pwd = document.getElementById('loginPassword').value.trim();
 
-      if (!babyName || !pwd) return alert("कृपया नाम और पासवर्ड भरें");
+      if (!babyName || !pwd) return alert("Please provide both name and master password");
 
       try {
         const res = await fetch('/api/profile/auth', {
@@ -915,10 +835,10 @@ HTML_PAGE = """<!DOCTYPE html>
           toggleVaultModal();
           showVaultDashboard();
         } else {
-          alert("⚠️ अमान्य क्रेडेंशियल्स! नाम या पासवर्ड गलत है।");
+          alert("⚠️ Invalid credentials! Please check the baby name and password.");
         }
       } catch (err) {
-        alert("सर्वर से कनेक्ट नहीं हो सका। कृपया नेट चेक करें।");
+        alert("Failed to connect to cloud server. Check internet.");
       }
     }
 
@@ -932,8 +852,8 @@ HTML_PAGE = """<!DOCTYPE html>
 
       document.getElementById('vaultDashboard').classList.add('hidden');
       document.getElementById('activeProfileBanner').classList.add('hidden');
-      document.getElementById('navVaultText').innerText = "लॉगिन / वॉल्ट";
-      alert("🔒 वॉल्ट सुरक्षित लॉक और लॉगआउट कर दिया गया है।");
+      document.getElementById('navVaultText').innerText = "Login / Open Vault";
+      alert("🔒 Vault locked and session ended.");
     }
 
     function showVaultDashboard() {
@@ -968,7 +888,7 @@ HTML_PAGE = """<!DOCTYPE html>
     }
 
     async function saveNewMilestone() {
-      if (!activeSession.profileHash || !activeSession.passphrase) return alert("कृपया पहले वॉल्ट लॉगिन करें");
+      if (!activeSession.profileHash || !activeSession.passphrase) return alert("Please login to vault first");
 
       const type = document.getElementById('milestoneType').value;
       const eventDate = document.getElementById('mEventDate').value;
@@ -977,13 +897,13 @@ HTML_PAGE = """<!DOCTYPE html>
       let eventTag = "";
       if (type === 'CUSTOM') {
         eventTag = document.getElementById('mCustomQuestion').value.trim();
-        if (!eventTag) return alert("कृपया अपना सवाल / घटना लिखें");
+        if (!eventTag) return alert("Please specify question/title");
       } else {
         const sel = document.getElementById('mPresetTag');
         eventTag = sel.options[sel.selectedIndex].text;
       }
 
-      if (!notes) return alert("कृपया उस पल की यादें लिखें");
+      if (!notes) return alert("Please write details/notes for this memory");
 
       const payload = {
         profile_hash: activeSession.profileHash,
@@ -993,7 +913,7 @@ HTML_PAGE = """<!DOCTYPE html>
           title: eventTag, 
           notes: notes, 
           eventDate: eventDate,
-          savedAt: new Date().toLocaleDateString('hi-IN') 
+          savedAt: new Date().toLocaleDateString('en-IN') 
         }
       };
 
@@ -1001,7 +921,7 @@ HTML_PAGE = """<!DOCTYPE html>
         const q = getOfflineQueue();
         q.push(payload);
         setOfflineQueue(q);
-        alert("⚠️ इंटरनेट बंद है! याद को ऑफ़लाइन सहेज लिया गया है। नेट आते ही सिंक हो जाएगी।");
+        alert("⚠️ Offline! Memory saved locally and queued for auto-sync.");
         renderLocalMilestone(payload);
       } else {
         try {
@@ -1010,13 +930,13 @@ HTML_PAGE = """<!DOCTYPE html>
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          alert("🎉 याद सफलतापूर्वक AES-256 क्लाउड वॉल्ट में जुड़ गई!");
+          alert("🎉 Memory securely saved to AES-256 cloud vault!");
           triggerSyncAndReload();
         } catch (e) {
           const q = getOfflineQueue();
           q.push(payload);
           setOfflineQueue(q);
-          alert("सर्वर तक कनेक्शन नहीं पहुंचा। याद को ऑफ़लाइन कतार में सहेज लिया गया है।");
+          alert("Server unreachable. Queued in offline storage.");
           renderLocalMilestone(payload);
         }
       }
@@ -1034,7 +954,7 @@ HTML_PAGE = """<!DOCTYPE html>
             <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1">
               <span>📌</span> ${item.event_tag}
             </span>
-            <span class="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">Pending Sync</span>
+            <span class="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">Pending Cloud Sync</span>
           </div>
           <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
         </div>` + container.innerHTML;
@@ -1075,7 +995,7 @@ HTML_PAGE = """<!DOCTYPE html>
           container.innerHTML = `
             <div class="p-6 text-center border-2 border-dashed border-stone-200 rounded-2xl bg-white/50">
               <span class="text-2xl block mb-1">🕊️</span>
-              <p class="text-xs text-stone-500 font-medium">अभी कोई याद या सवाल दर्ज नहीं है। ऊपर पहला माइलस्टोन जोड़ें!</p>
+              <p class="text-xs text-stone-500 font-medium">No memories recorded yet. Record your first moment above!</p>
             </div>`;
           return;
         }
@@ -1088,9 +1008,9 @@ HTML_PAGE = """<!DOCTYPE html>
                 <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1.5">
                   <span class="text-amber-700">✦</span> ${item.event_tag}
                 </span>
-                <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
+                <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2.5 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
               </div>
-              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-2.5 rounded-xl border border-stone-100">${d.notes || ''}</p>
+              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-3 rounded-xl border border-stone-100">${d.notes || ''}</p>
             </div>`;
         });
       } catch (err) {
@@ -1099,20 +1019,19 @@ HTML_PAGE = """<!DOCTYPE html>
     }
 
     function downloadAlbumPDF() {
-      if (!activeSession.babyName) return alert("कृपया पहले वॉल्ट लॉगिन करें");
+      if (!activeSession.babyName) return alert("Please login to vault first");
 
       const m = activeSession.meta || {};
       document.getElementById('pdfBabyName').innerText = activeSession.babyName;
-      document.getElementById('pdfBirthDate').innerText = `तारीख: ${m.date || '-'}`;
-      document.getElementById('pdfBirthTime').innerText = `समय: ${m.time || '-'}`;
-      document.getElementById('pdfBirthCity').innerText = `स्थान: ${m.city || '-'}`;
+      document.getElementById('pdfBirthDate').innerText = `Date: ${m.date || '-'}`;
+      document.getElementById('pdfBirthTime').innerText = `Time: ${m.time || '-'}`;
+      document.getElementById('pdfBirthCity').innerText = `Place: ${m.city || '-'}`;
 
       document.getElementById('pdfLagna').innerText = m.lagna || '-';
       document.getElementById('pdfRashi').innerText = m.rashi || '-';
       document.getElementById('pdfNakshatra').innerText = `${m.nakshatra || '-'} (${m.pada || '-'})`;
       document.getElementById('pdfAkshar').innerText = m.akshar || '-';
 
-      // Deep Clone Complete Live Chart Graphic
       const chartCloneContainer = document.getElementById('pdfChartClone');
       chartCloneContainer.innerHTML = "";
       const originalBox = document.getElementById('mainKundliBox');
@@ -1122,7 +1041,6 @@ HTML_PAGE = """<!DOCTYPE html>
         chartCloneContainer.appendChild(clonedBox);
       }
 
-      // Render memories cleanly into the print template (Never Cut-Off)
       const pdfMilestoneContainer = document.getElementById('pdfMilestoneList');
       pdfMilestoneContainer.innerHTML = "";
       if (currentSavedMilestones.length === 0) {
@@ -1143,18 +1061,11 @@ HTML_PAGE = """<!DOCTYPE html>
       }
 
       const certElement = document.getElementById('pdfPrintCanvas');
-
-      // Optimized settings for html2pdf to prevent any blank spaces and cut-offs
       const opt = {
-        margin: [5, 5, 5, 5],
+        margin: [6, 6, 6, 6],
         filename: `${activeSession.babyName}_Vedic_Janmapatri_Album.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          scrollY: 0,
-          scrollX: 0
-        },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -1163,7 +1074,7 @@ HTML_PAGE = """<!DOCTYPE html>
     }
 
     async function downloadBackupFile() {
-      if (!activeSession.profileHash) return alert("कृपया पहले वॉल्ट लॉगिन करें");
+      if (!activeSession.profileHash) return alert("Please login to vault first");
       try {
         const res = await fetch(`/api/backup/export?prof_hash=${encodeURIComponent(activeSession.profileHash)}`);
         const data = await res.json();
@@ -1176,7 +1087,7 @@ HTML_PAGE = """<!DOCTYPE html>
         a.click();
         URL.revokeObjectURL(url);
       } catch (err) {
-        alert("बैकअप डाउनलोड त्रुटि: " + err.message);
+        alert("Backup download failed: " + err.message);
       }
     }
 
@@ -1194,10 +1105,10 @@ HTML_PAGE = """<!DOCTYPE html>
             body: JSON.stringify(jsonContent)
           });
           const result = await res.json();
-          alert(`🎉 बैकअप सफलतापूर्वक रीस्टोर हो गया! (${result.imported} रिकॉर्ड जुड़े)`);
+          alert(`🎉 Backup restored successfully! (${result.imported} memories synced)`);
           triggerSyncAndReload();
         } catch (err) {
-          alert("अमान्य बैकअप फ़ाइल: " + err.message);
+          alert("Invalid backup file: " + err.message);
         }
       };
       reader.readAsText(file);
@@ -1222,6 +1133,18 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode('utf-8'))
+
+        elif url.path == "/manifest.json":
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/manifest+json')
+            self.end_headers()
+            self.wfile.write(json.dumps(PWA_MANIFEST).encode('utf-8'))
+
+        elif url.path == "/sw.js":
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/javascript')
+            self.end_headers()
+            self.wfile.write(SERVICE_WORKER_JS.encode('utf-8'))
 
         elif url.path == "/api/kundli":
             y = int(params.get('y', [2026])[0])
