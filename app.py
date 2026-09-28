@@ -168,30 +168,51 @@ HTML_PAGE = """<!DOCTYPE html>
 
       <!-- RIGHT: Naming & Triple Journal Vault -->
       <div class="lg:col-span-7 space-y-6">
+
+        <!-- STEP 2: Naming Engine with Unlimited Generate & Favorites Tray -->
         <div id="namesSection" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-base font-bold text-stone-800 flex items-center gap-1.5"><span>👶</span> Vedic Name Selection</h2>
               <p class="text-[11px] text-stone-500">Names for Syllable '<span id="currentLetterBadge" class="font-bold text-amber-900"></span>'</p>
             </div>
-            <button type="button" onclick="fetchAINames()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-xl font-bold transition">Refresh Names ↻</button>
+            <button type="button" onclick="fetchAINames()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-xl font-bold transition">
+              Generate More ↻
+            </button>
           </div>
+
           <div class="grid grid-cols-2 gap-2 bg-stone-100 p-1.5 rounded-xl text-xs font-bold text-center">
             <button id="modeStrict" onclick="setNamingMode('strict')" class="py-2 rounded-lg bg-white text-amber-950 shadow-xs">🎯 Strict Syllable (<span id="strictLetterText"></span>)</button>
             <button id="modeAnumati" onclick="setNamingMode('anumati')" class="py-2 rounded-lg text-stone-500">📜 Permitted Class (<span id="anumatiLetterText"></span>)</button>
           </div>
+
           <div class="flex gap-2">
             <button id="btnAll" onclick="setGenderFilter('All')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-amber-800 text-white">All Names</button>
             <button id="btnBoy" onclick="setGenderFilter('Boy')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600">👦 Boys</button>
             <button id="btnGirl" onclick="setGenderFilter('Girl')" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600">👧 Girls</button>
           </div>
+
+          <!-- FAVORITES / SHORTLIST TRAY -->
+          <div id="favTrayContainer" class="hidden p-3.5 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-rose-950 flex items-center gap-1.5">
+                <span>❤️</span> Shortlisted Favorites (<span id="favCount">0</span>)
+              </span>
+              <span class="text-[10px] text-rose-700">Click Select on chosen name</span>
+            </div>
+            <div id="favList" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- DYNAMIC NAME LIST -->
           <div id="namesList" class="space-y-3"></div>
+
           <div class="pt-3 border-t border-stone-200 text-xs flex gap-2">
             <input type="text" id="customNameInput" placeholder="Or enter pre-decided name..." class="flex-1 p-2.5 rounded-xl border border-stone-300">
             <button onclick="useCustomName()" class="px-4 py-2.5 bg-stone-900 text-white font-bold rounded-xl">Select</button>
           </div>
         </div>
 
+        <!-- STEP 3: Setup Profile Section -->
         <div id="profileSetupSection" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4 border-2 border-amber-300">
           <h2 class="text-base font-bold text-stone-900 flex items-center gap-1.5"><span>🔐</span> Create Baby Profile & Master Password</h2>
           <div class="p-3 bg-amber-50 rounded-xl text-xs space-y-1">
@@ -255,17 +276,17 @@ HTML_PAGE = """<!DOCTYPE html>
               <button onclick="saveVaccinationRecord()" class="w-full py-2.5 bg-blue-900 text-white font-bold rounded-xl">💉 Save Vaccination to Vault</button>
             </div>
 
-            <!-- Form 3: Medication & Doctor Visit -->
+            <!-- Form 3: Medication -->
             <div id="formMedSection" class="hidden space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <input type="text" id="medDoctor" placeholder="Doctor / Clinic Name" class="p-2.5 rounded-xl border border-stone-300 bg-white">
                 <input type="date" id="medDate" class="p-2.5 rounded-xl border border-stone-300 bg-white">
               </div>
               <div>
-                <input type="text" id="medProblem" placeholder="Symptoms / Problem (उदा. तेज बुखार, पेट दर्द, खांसी...)" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+                <input type="text" id="medProblem" placeholder="Symptoms / Problem (उदा. तेज बुखार, पेट दर्द...)" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
               </div>
-              <textarea id="medPrescription" rows="2" placeholder="Prescribed Medicines & Doses (दवाइयों के नाम, खुराक, सिरप...)" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white"></textarea>
-              <textarea id="medExperience" rows="2" placeholder="Baby recovery experience, parent feelings and care tips..." class="w-full p-2.5 rounded-xl border border-stone-300 bg-white"></textarea>
+              <textarea id="medPrescription" rows="2" placeholder="Prescribed Medicines & Doses (दवाइयों के नाम, खुराक...)" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white"></textarea>
+              <textarea id="medExperience" rows="2" placeholder="Baby recovery experience, parent feelings..." class="w-full p-2.5 rounded-xl border border-stone-300 bg-white"></textarea>
               <button onclick="saveMedicationRecord()" class="w-full py-2.5 bg-teal-800 text-white font-bold rounded-xl">🩺 Save Medical Journal to Vault</button>
             </div>
           </div>
@@ -276,7 +297,6 @@ HTML_PAGE = """<!DOCTYPE html>
             <button onclick="openExportModal()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-4 py-2 rounded-xl font-bold shadow-xs">📖 Export PDF Album</button>
           </div>
 
-          <!-- Live Feed -->
           <div id="albumView" class="space-y-3"></div>
 
           <!-- Wipe Zone -->
@@ -302,7 +322,7 @@ HTML_PAGE = """<!DOCTYPE html>
         <h3 class="text-base font-bold text-stone-900">📖 Select Album Export Mode</h3>
         <button onclick="toggleExportModal()" class="text-stone-400 font-black">✕</button>
       </div>
-      <p class="text-xs text-stone-500">Choose which section you wish to print into the clean official PDF journal:</p>
+      <p class="text-xs text-stone-500">Choose which section you wish to print into the official PDF journal:</p>
       <div class="space-y-2 text-xs font-bold">
         <button onclick="executePDFExport('ALL')" class="w-full py-2.5 bg-amber-900 text-white rounded-xl shadow-xs">👑 Complete Grand Album (All Sections)</button>
         <button onclick="executePDFExport('MEMORIES')" class="w-full py-2.5 bg-stone-100 text-stone-800 border border-stone-200 rounded-xl">🌟 Vedic Kundli & Memories Only</button>
@@ -318,7 +338,7 @@ HTML_PAGE = """<!DOCTYPE html>
       <h3 class="text-base font-bold text-stone-900">🔑 Unlock Baby Vault</h3>
       <p class="text-xs text-stone-500">Enter baby name and family master password:</p>
       <div class="space-y-2.5 text-xs">
-        <input type="text" id="loginBabyName" placeholder="Baby Name (e.g. Shivansh)" class="w-full p-2.5 rounded-xl border border-stone-300">
+        <input type="text" id="loginBabyName" placeholder="Baby Name" class="w-full p-2.5 rounded-xl border border-stone-300">
         <input type="password" id="loginPassword" placeholder="Master Password" class="w-full p-2.5 rounded-xl border border-stone-300">
         <button onclick="loginToVault()" class="w-full py-2.5 bg-amber-900 text-white rounded-xl font-bold">Unlock Vault ➔</button>
       </div>
@@ -370,6 +390,7 @@ HTML_PAGE = """<!DOCTYPE html>
     let selectedGender = "All";
     let namingMode = "strict";
     let currentSavedMilestones = [];
+    let favoriteNames = JSON.parse(localStorage.getItem('nd_fav_names') || '[]');
 
     let activeSession = {
       profileHash: localStorage.getItem('nd_prof_hash') || '',
@@ -379,6 +400,7 @@ HTML_PAGE = """<!DOCTYPE html>
     };
 
     window.addEventListener('DOMContentLoaded', () => {
+      renderFavoritesTray();
       if (activeSession.profileHash && activeSession.passphrase) {
         showVaultDashboard();
       }
@@ -450,22 +472,100 @@ HTML_PAGE = """<!DOCTYPE html>
       fetchAINames();
     }
 
+    function setNamingMode(mode) {
+      namingMode = mode;
+      if (mode === 'strict') {
+        document.getElementById('modeStrict').className = "py-2 rounded-lg bg-white text-amber-950 shadow-xs";
+        document.getElementById('modeAnumati').className = "py-2 rounded-lg text-stone-500";
+      } else {
+        document.getElementById('modeAnumati').className = "py-2 rounded-lg bg-white text-amber-950 shadow-xs";
+        document.getElementById('modeStrict').className = "py-2 rounded-lg text-stone-500";
+      }
+      fetchAINames();
+    }
+
+    function setGenderFilter(gen) {
+      selectedGender = gen;
+      ['btnAll', 'btnBoy', 'btnGirl'].forEach(id => {
+        document.getElementById(id).className = "flex-1 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600";
+      });
+      if (gen === 'All') document.getElementById('btnAll').className = "flex-1 py-1.5 rounded-xl text-xs font-bold bg-amber-800 text-white";
+      if (gen === 'Boy') document.getElementById('btnBoy').className = "flex-1 py-1.5 rounded-xl text-xs font-bold bg-blue-700 text-white";
+      if (gen === 'Girl') document.getElementById('btnGirl').className = "flex-1 py-1.5 rounded-xl text-xs font-bold bg-rose-700 text-white";
+      fetchAINames();
+    }
+
     async function fetchAINames() {
       const listDiv = document.getElementById('namesList');
       listDiv.innerHTML = "";
       const res = await fetch(`/api/ai-names?letter=${encodeURIComponent(currentLetter)}&gender=${encodeURIComponent(selectedGender)}&mode=${encodeURIComponent(namingMode)}`);
       const names = await res.json();
+      
       names.forEach(n => {
+        const isFav = favoriteNames.some(f => f.name_hi === n.name_hi);
         listDiv.innerHTML += `
           <div class="p-3.5 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-1">
             <div class="flex justify-between items-center">
-              <h3 class="text-base font-extrabold text-stone-900">${n.name_hi} <span class="text-xs text-stone-500 font-sans">(${n.name_en})</span></h3>
-              <button onclick="finalizeName('${n.name_hi}')" class="px-3 py-1 bg-amber-100 text-amber-950 rounded-xl text-xs font-black">👑 Select</button>
+              <div>
+                <h3 class="text-base font-extrabold text-stone-900">${n.name_hi} <span class="text-xs text-stone-500 font-sans">(${n.name_en})</span></h3>
+                <span class="text-[10px] ${n.gender === 'Boy' ? 'text-blue-700 bg-blue-50' : 'text-rose-700 bg-rose-50'} px-2 py-0.5 rounded-full font-bold">${n.gender}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick='toggleFavorite(${JSON.stringify(n)})' class="px-2.5 py-1 border rounded-xl text-xs font-bold transition ${isFav ? 'bg-rose-50 border-rose-300 text-rose-600' : 'bg-stone-50 border-stone-200 text-stone-600 hover:text-rose-600'}">
+                  ${isFav ? '❤️ Added' : '🤍 Favorite'}
+                </button>
+                <button onclick="finalizeName('${n.name_hi}')" class="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-black shadow-2xs">👑 Select</button>
+              </div>
             </div>
             <p class="text-xs text-stone-700"><strong>Meaning:</strong> ${n.meaning}</p>
+            ${n.significance ? `<p class="text-[11px] text-amber-900"><strong>Significance:</strong> ${n.significance}</p>` : ''}
           </div>
         `;
       });
+    }
+
+    function toggleFavorite(n) {
+      const idx = favoriteNames.findIndex(f => f.name_hi === n.name_hi);
+      if (idx > -1) {
+        favoriteNames.splice(idx, 1);
+      } else {
+        favoriteNames.push(n);
+      }
+      localStorage.setItem('nd_fav_names', JSON.stringify(favoriteNames));
+      renderFavoritesTray();
+      fetchAINames();
+    }
+
+    function renderFavoritesTray() {
+      const tray = document.getElementById('favTrayContainer');
+      const list = document.getElementById('favList');
+      const count = document.getElementById('favCount');
+
+      if (!favoriteNames || favoriteNames.length === 0) {
+        tray.classList.add('hidden');
+        return;
+      }
+
+      tray.classList.remove('hidden');
+      count.innerText = favoriteNames.length;
+      list.innerHTML = "";
+
+      favoriteNames.forEach((f, i) => {
+        list.innerHTML += `
+          <div class="flex items-center gap-1.5 bg-white border border-rose-200 px-2.5 py-1 rounded-xl text-xs shadow-2xs">
+            <span class="font-bold text-stone-800">${f.name_hi}</span>
+            <button onclick="finalizeName('${f.name_hi}')" class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">👑</button>
+            <button onclick="removeFavorite(${i})" class="text-[10px] text-stone-400 hover:text-rose-600 font-black">✕</button>
+          </div>
+        `;
+      });
+    }
+
+    function removeFavorite(idx) {
+      favoriteNames.splice(idx, 1);
+      localStorage.setItem('nd_fav_names', JSON.stringify(favoriteNames));
+      renderFavoritesTray();
+      fetchAINames();
     }
 
     function finalizeName(name) {
@@ -686,7 +786,6 @@ HTML_PAGE = """<!DOCTYPE html>
       }
     }
 
-    // SELECTIVE PDF EXPORT
     function executePDFExport(mode) {
       toggleExportModal();
       const m = activeSession.meta || {};
@@ -699,13 +798,11 @@ HTML_PAGE = """<!DOCTYPE html>
       document.getElementById('pdfNakshatra').innerText = `${m.nakshatra || '-'} (${m.pada || '-'})`;
       document.getElementById('pdfAkshar').innerText = m.akshar || '-';
 
-      // Clone Chart
       const chartClone = document.getElementById('pdfChartClone');
       chartClone.innerHTML = "";
       const originalBox = document.getElementById('mainKundliBox');
       if (originalBox) chartClone.appendChild(originalBox.cloneNode(true));
 
-      // Filter list
       let filtered = currentSavedMilestones;
       if (mode === "MEMORIES") filtered = currentSavedMilestones.filter(x => x.data.category === "MEMORY");
       if (mode === "VACCINES") filtered = currentSavedMilestones.filter(x => x.data.category === "VACCINE");
