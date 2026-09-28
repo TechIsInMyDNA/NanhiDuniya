@@ -6,7 +6,8 @@ from ND import get_kundli_details
 from NE import generate_ai_names
 from TV import (
     init_db,
-    register_or_login_profile,
+    register_profile,
+    login_profile,
     add_profile_milestone,
     get_profile_milestones,
     edit_profile_milestone,
@@ -80,7 +81,6 @@ HTML_PAGE = """<!DOCTYPE html>
 </head>
 <body class="text-stone-800 pb-28 min-h-screen">
 
-  <!-- Header -->
   <header class="py-3.5 px-4 md:px-8 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
     <div class="max-w-6xl mx-auto flex justify-between items-center">
       <div class="flex items-center gap-3">
@@ -112,7 +112,6 @@ HTML_PAGE = """<!DOCTYPE html>
 
   <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
 
-    <!-- Active Vault Profile Banner -->
     <div id="activeProfileBanner" class="hidden p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center text-xs shadow-xs">
       <div class="flex items-center gap-3">
         <div class="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></div>
@@ -126,10 +125,9 @@ HTML_PAGE = """<!DOCTYPE html>
       </button>
     </div>
 
-    <!-- MAIN TWO-COLUMN RESPONSIVE GRID -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      <!-- LEFT COLUMN: Kundli & Birth Form -->
+      <!-- LEFT COLUMN -->
       <div class="lg:col-span-5 space-y-6">
         
         <div id="stepBirthForm" class="glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
@@ -209,7 +207,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
       </div>
 
-      <!-- RIGHT COLUMN: Naming & Vault -->
+      <!-- RIGHT COLUMN -->
       <div class="lg:col-span-7 space-y-6">
 
         <!-- STEP 2: Naming Engine -->
@@ -303,7 +301,6 @@ HTML_PAGE = """<!DOCTYPE html>
             <div><span class="text-[10px] text-stone-500 block">Syllable</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
           </div>
 
-          <!-- DUAL ENTRY -->
           <div class="p-4 bg-gradient-to-b from-stone-50 to-white rounded-2xl border border-stone-200 text-xs space-y-3 shadow-xs">
             <div class="flex justify-between items-center">
               <span class="font-bold text-stone-800 flex items-center gap-1.5">
@@ -621,7 +618,6 @@ HTML_PAGE = """<!DOCTYPE html>
       }
     }
 
-    // COMPLETE WIPE FUNCTION (Server + LocalStorage + Session)
     async function confirmDeleteVault() {
       const pwd = document.getElementById('deleteConfirmPassword').value.trim();
       if (!pwd) return alert("Please enter master password to proceed");
@@ -641,7 +637,6 @@ HTML_PAGE = """<!DOCTYPE html>
         });
         const data = await res.json();
         if (data.status === 'ok') {
-          // Clear all client cache completely
           localStorage.clear();
           sessionStorage.clear();
           activeSession = { profileHash: '', babyName: '', passphrase: '', meta: {} };
@@ -810,7 +805,7 @@ HTML_PAGE = """<!DOCTYPE html>
       };
 
       try {
-        const res = await fetch('/api/profile/auth', {
+        const res = await fetch('/api/profile/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -849,7 +844,7 @@ HTML_PAGE = """<!DOCTYPE html>
       if (!babyName || !pwd) return alert("Please provide both name and master password");
 
       try {
-        const res = await fetch('/api/profile/auth', {
+        const res = await fetch('/api/profile/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -873,7 +868,7 @@ HTML_PAGE = """<!DOCTYPE html>
           toggleVaultModal();
           showVaultDashboard();
         } else {
-          alert("⚠️ Invalid credentials! Please check the baby name and password.");
+          alert("⚠️ " + data.message);
         }
       } catch (err) {
         alert("Failed to connect to cloud server. Check internet.");
@@ -1061,7 +1056,6 @@ HTML_PAGE = """<!DOCTYPE html>
       setOfflineQueue([]);
     }
 
-    // CLOUD-FIRST RELOAD
     async function triggerSyncAndReload(forceCloud = false) {
       if (!activeSession.profileHash || !activeSession.passphrase) return;
 
@@ -1122,7 +1116,7 @@ HTML_PAGE = """<!DOCTYPE html>
                   <span class="text-amber-700">✦</span> ${item.event_tag}
                 </span>
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
+                  <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2.5 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
                   <button onclick="editEntryPrompt(${item.id})" class="text-[10px] bg-stone-50 border border-stone-300 text-stone-700 px-2 py-0.5 rounded-lg font-bold hover:bg-stone-100 transition">✏️ Edit</button>
                 </div>
               </div>
@@ -1132,7 +1126,6 @@ HTML_PAGE = """<!DOCTYPE html>
       });
     }
 
-    // EDIT RECORD WITH MASTER PASSWORD
     async function editEntryPrompt(id) {
       const item = currentSavedMilestones.find(x => x.id === id);
       if (!item) return;
@@ -1373,11 +1366,21 @@ class SimpleServer(BaseHTTPRequestHandler):
         body = self.rfile.read(length)
         payload = json.loads(body.decode('utf-8'))
 
-        if self.path == "/api/profile/auth":
-            res = register_or_login_profile(
+        if self.path == "/api/profile/register":
+            res = register_profile(
                 payload['baby_name'],
                 payload['passphrase'],
-                payload.get('meta_data')
+                payload['meta_data']
+            )
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode('utf-8'))
+
+        elif self.path == "/api/profile/login":
+            res = login_profile(
+                payload['baby_name'],
+                payload['passphrase']
             )
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
