@@ -67,6 +67,7 @@
     .entry-sub { font-size: 0.83rem; color: #cbd5e1; line-height: 1.4; margin-bottom: 3px; }
     .tag { background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem; }
     .action-row { display: flex; gap: 8px; margin-top: 8px; }
+    .preview-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -202,16 +203,27 @@
       <div id="list-med"></div>
     </div>
 
-    <!-- 3. MEMORIES TAB -->
+    <!-- 3. MEMORIES TAB WITH PHOTO UPLOAD -->
     <div id="panel-mem" class="hidden">
       <div style="background: #0b1329; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
         <h4 id="mem-form-title" style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Save Milestone & Memory</h4>
         <input type="hidden" id="edit-mem-index" value="-1">
-        <div class="form-group"><input type="text" id="mem-title" placeholder="Moment Title (e.g. First word, Rolled over)"></div>
+        <div class="form-group"><input type="text" id="mem-title" placeholder="Moment Title (e.g. First smile, Crawling)"></div>
         <div class="row">
           <div class="form-group"><label>Memory Date</label><input type="date" id="mem-date"></div>
           <div class="form-group"><label>Memory Time</label><input type="time" id="mem-time"></div>
         </div>
+        
+        <!-- PHOTO INPUT -->
+        <div class="form-group">
+          <label>Upload Photo (Optional)</label>
+          <input type="file" id="mem-photo" accept="image/*" onchange="handleImageSelection(event)">
+          <div id="photo-preview-wrap" class="hidden" style="margin-top: 8px;">
+            <img id="photo-preview-img" src="" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);">
+            <button class="btn btn-danger btn-sm" style="margin-top: 4px; padding: 4px 8px;" onclick="clearPhotoSelection()">Remove Photo</button>
+          </div>
+        </div>
+
         <div class="form-group"><label>Feelings & Description</label><textarea id="mem-desc" rows="3" placeholder="Describe the wonderful memory and feelings in detail..."></textarea></div>
         <button class="btn btn-primary btn-sm" id="mem-btn-submit" style="width: 100%;" onclick="saveMemory()">Save Memory</button>
         <button class="btn btn-secondary btn-sm hidden" id="mem-btn-cancel" style="width: 100%; margin-top: 6px;" onclick="resetMemForm()">Cancel Edit</button>
@@ -271,8 +283,8 @@
     owner: "TechIsInMyDNA",
     repo: "NanhiDuniya",
     path: "data.json",
-    t1: "ghp_yaXkzS6pvUHe4",   // Split token first half
-    t2: "tcHHG2p304vWGUNtS1rbpfO"       // Split token second half
+    t1: "ghp_yaXkzS6pvUHe4t",   // Split token first half
+    t2: "cHHG2p304vWGUNtS1rbpfO"       // Split token second half
   };
 
   function getActiveToken() {
@@ -281,6 +293,7 @@
 
   let activeBabyKey = null;
   let allVaults = {};
+  let currentMemoryPhotoBase64 = "";
 
   window.addEventListener("DOMContentLoaded", async () => {
     loadLocalStore();
@@ -364,6 +377,40 @@
     } catch(e) {
       document.getElementById("sync-status").innerText = "Local Saved";
     }
+  }
+
+  // IMAGE COMPRESSOR TO PREVENT BIG JSON PAYLOAD
+  function handleImageSelection(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement("canvas");
+        const maxW = 600;
+        const scale = Math.min(maxW / img.width, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Quality 0.6 keeps file around ~40-60KB
+        currentMemoryPhotoBase64 = canvas.toDataURL("image/jpeg", 0.6);
+        document.getElementById("photo-preview-img").src = currentMemoryPhotoBase64;
+        document.getElementById("photo-preview-wrap").classList.remove("hidden");
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearPhotoSelection() {
+    currentMemoryPhotoBase64 = "";
+    document.getElementById("mem-photo").value = "";
+    document.getElementById("photo-preview-wrap").classList.add("hidden");
   }
 
   // AUTH ACTIONS
@@ -579,20 +626,21 @@
     const date = document.getElementById("mem-date").value || new Date().toLocaleDateString('en-GB');
     const time = document.getElementById("mem-time").value || "";
     const desc = document.getElementById("mem-desc").value.trim();
+    const photo = currentMemoryPhotoBase64;
     const editIdx = parseInt(document.getElementById("edit-mem-index").value);
 
     if (!title || !desc) return alert("Title and description are required!");
 
     const baby = allVaults[activeBabyKey];
     if (editIdx > -1) {
-      baby.memories[editIdx] = { title, date, time, desc };
+      baby.memories[editIdx] = { 
+        title, date, time, desc, 
+        photo: photo || (baby.memories[editIdx].photo || "") 
+      };
       resetMemForm();
     } else {
-      baby.memories.push({ title, date, time, desc });
-      document.getElementById("mem-title").value = "";
-      document.getElementById("mem-date").value = "";
-      document.getElementById("mem-time").value = "";
-      document.getElementById("mem-desc").value = "";
+      baby.memories.push({ title, date, time, desc, photo });
+      resetMemForm();
     }
 
     renderAllPanels();
@@ -606,6 +654,15 @@
     document.getElementById("mem-time").value = mm.time || "";
     document.getElementById("mem-desc").value = mm.desc;
     document.getElementById("edit-mem-index").value = idx;
+    
+    if (mm.photo) {
+      currentMemoryPhotoBase64 = mm.photo;
+      document.getElementById("photo-preview-img").src = mm.photo;
+      document.getElementById("photo-preview-wrap").classList.remove("hidden");
+    } else {
+      clearPhotoSelection();
+    }
+
     document.getElementById("mem-form-title").innerText = "Edit Memory & Milestone";
     document.getElementById("mem-btn-submit").innerText = "Update Memory";
     document.getElementById("mem-btn-cancel").classList.remove("hidden");
@@ -617,6 +674,7 @@
     document.getElementById("mem-time").value = "";
     document.getElementById("mem-desc").value = "";
     document.getElementById("edit-mem-index").value = "-1";
+    clearPhotoSelection();
     document.getElementById("mem-form-title").innerText = "Save Milestone & Memory";
     document.getElementById("mem-btn-submit").innerText = "Save Memory";
     document.getElementById("mem-btn-cancel").classList.add("hidden");
@@ -676,6 +734,7 @@
           <div class="entry-head"><span>Date: <b>${mm.date}</b> ${mm.time ? '| Time: <b>' + mm.time + '</b>' : ''}</span></div>
           <div class="entry-title" style="color: #34d399;">${mm.title}</div>
           <div class="entry-sub">${mm.desc}</div>
+          ${mm.photo ? `<img src="${mm.photo}" class="preview-img">` : ''}
           <div class="action-row">
             <button class="btn btn-secondary btn-sm" onclick="editMemory(${idx})">Edit</button>
             <button class="btn btn-danger btn-sm" onclick="deleteMemory(${idx})">Delete</button>
@@ -788,9 +847,10 @@
       if ((baby.memories || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
       else {
         baby.memories.forEach(mm => {
-          html += `<div style="margin-top: 10px; border-left: 3px solid #f59e0b; padding-left: 10px;">
+          html += `<div style="margin-top: 14px; border-left: 3px solid #f59e0b; padding-left: 12px; page-break-inside: avoid;">
             <p style="font-size: 12px; font-weight: bold; margin: 0;">${mm.title} <span style="font-size: 10px; color: #64748b; font-weight: normal;">(${mm.date} ${mm.time ? '| ' + mm.time : ''})</span></p>
-            <p style="font-size: 11px; color: #334155; margin-top: 2px;">${mm.desc}</p>
+            <p style="font-size: 11px; color: #334155; margin-top: 3px;">${mm.desc}</p>
+            ${mm.photo ? `<div style="margin-top: 6px;"><img src="${mm.photo}" style="max-width: 160px; max-height: 140px; border-radius: 6px; border: 1px solid #cbd5e1;"></div>` : ''}
           </div>`;
         });
       }
