@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nanhi Duniya - Smart Baby Vault</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Rozha+One&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 12px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 650px; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-family: 'Rozha One', serif; font-size: 2.2rem; color: var(--accent); letter-spacing: 1px; }
+    header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); margin-bottom: 20px; }
+    .step-badge { display: inline-block; background: rgba(245, 158, 11, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; }
+    
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+    input, select, textarea { width: 100%; padding: 12px 14px; background: #0b1120; border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.2s; }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #334155; color: #fff; margin-top: 10px; }
+    .btn-sm { width: auto; padding: 8px 14px; font-size: 0.85rem; }
+    
+    .hidden { display: none !important; }
+    
+    /* Dashboard Elements */
+    .profile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+    .profile-title h2 { font-size: 1.5rem; color: var(--accent); }
+    .profile-title p { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .tab-btn { background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    .tab-btn.active { background: rgba(245, 158, 11, 0.15); color: var(--accent); }
+    
+    .list-item { background: #0b1120; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .list-item-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    .list-item-body { font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>नन्ही दुनिया</h1>
+    <p>Smart Baby Vault & Records System</p>
+  </header>
+
+  <!-- SCREEN 1: BIRTH DETAILS -->
+  <div id="screen-step1" class="card">
+    <span class="step-badge">चरण 1 / 2</span>
+    <h2 style="margin-bottom: 16px;">जन्म विवरण दर्ज करें</h2>
+    
+    <div class="form-group">
+      <label>जन्म की तारीख (Date of Birth)</label>
+      <input type="date" id="dob" required>
+    </div>
+    
+    <div class="form-group">
+      <label>जन्म का समय (Time of Birth)</label>
+      <input type="time" id="tob" required>
+    </div>
+    
+    <div class="form-group">
+      <label>जन्म स्थान (Place of Birth / City)</label>
+      <input type="text" id="pob" placeholder="e.g. Gondia, Maharashtra" required>
+    </div>
+    
+    <button class="btn btn-primary" onclick="goToStep2()">आगे बढ़ें &rarr;</button>
+    <button class="btn btn-secondary" onclick="showUnlockScreen()">पहले से प्रोफाइल है? अनलॉक करें 🔓</button>
+  </div>
+
+  <!-- SCREEN 2: PROFILE & LOCK -->
+  <div id="screen-step2" class="card hidden">
+    <span class="step-badge">चरण 2 / 2</span>
+    <h2 style="margin-bottom: 16px;">पहचान व सुरक्षा लॉक</h2>
+    
+    <div class="form-group">
+      <label>बच्चे का नाम (Baby Name)</label>
+      <input type="text" id="baby-name" placeholder="e.g. Aarav Agrawal" required>
+    </div>
+    
+    <div class="form-group">
+      <label>गुप्त पिन / पासवर्ड सेट करें (PIN or Password)</label>
+      <input type="password" id="set-password" placeholder="कम से कम 4 अक्षर" required>
+    </div>
+    
+    <button class="btn btn-primary" onclick="createProfile()">सुरक्षित प्रोफाइल बनाएं 🔒</button>
+    <button class="btn btn-secondary" onclick="backToStep1()">&larr; वापस जाएं</button>
+  </div>
+
+  <!-- SCREEN: UNLOCK EXISTING -->
+  <div id="screen-unlock" class="card hidden">
+    <h2 style="margin-bottom: 16px;">प्रोफाइल अनलॉक करें</h2>
+    
+    <div class="form-group">
+      <label>बच्चे का नाम (Baby Name)</label>
+      <input type="text" id="unlock-name" placeholder="दर्ज किया हुआ नाम" required>
+    </div>
+    
+    <div class="form-group">
+      <label>पिन / पासवर्ड (Password)</label>
+      <input type="password" id="unlock-password" placeholder="पासवर्ड डालें" required>
+    </div>
+    
+    <button class="btn btn-primary" onclick="unlockProfile()">अनलॉक करें 🔓</button>
+    <button class="btn btn-secondary" onclick="backToStep1()">&larr; नया प्रोफाइल बनाएं</button>
+  </div>
+
+  <!-- SCREEN 3: DASHBOARD -->
+  <div id="screen-dashboard" class="card hidden">
+    <div class="profile-header">
+      <div class="profile-title">
+        <h2 id="dash-name">Baby Name</h2>
+        <p id="dash-birthinfo">DOB | TOB | City</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="lockOut()">लॉक 🔒</button>
+    </div>
+
+    <!-- Sub Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-btn-med" onclick="switchTab('medical')">मेडिकल व टीकाकरण</button>
+      <button class="tab-btn" id="tab-btn-mem" onclick="switchTab('memories')">यादें व डायरी</button>
+    </div>
+
+    <!-- Medical Section -->
+    <div id="sec-medical">
+      <div class="form-group">
+        <label>नया मेडिकल / वजन / टीका लॉग जोड़ें</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="med-input" placeholder="e.g. 3.2 kg, BCG टीका लगा, डॉ. शर्मा">
+          <button class="btn btn-primary btn-sm" onclick="addEntry('medical_logs')">जोड़ें</button>
+        </div>
+      </div>
+      <div id="med-list"></div>
+    </div>
+
+    <!-- Memories Section -->
+    <div id="sec-memories" class="hidden">
+      <div class="form-group">
+        <label>सुखद स्मृति / माइलस्टोन दर्ज करें</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="mem-input" placeholder="e.g. पहली बार मुस्कुराया, करवट ली">
+          <button class="btn btn-primary btn-sm" onclick="addEntry('memories')">जोड़ें</button>
+        </div>
+      </div>
+      <div id="mem-list"></div>
+    </div>
+
+    <button class="btn btn-secondary" style="margin-top: 20px;" onclick="window.print()">रिकॉर्ड प्रिंट / PDF सेव करें 📄</button>
+  </div>
+</div>
+
+<script>
+  let currentProfile = null;
+  let tempBirthData = {};
+
+  function hideAll() {
+    document.getElementById("screen-step1").classList.add("hidden");
+    document.getElementById("screen-step2").classList.add("hidden");
+    document.getElementById("screen-unlock").classList.add("hidden");
+    document.getElementById("screen-dashboard").classList.add("hidden");
+  }
+
+  function goToStep2() {
+    const dob = document.getElementById("dob").value;
+    const tob = document.getElementById("tob").value;
+    const pob = document.getElementById("pob").value.trim();
+
+    if (!dob || !pob) {
+      alert("कृपया जन्म तारीख और स्थान भरें!");
+      return;
+    }
+    tempBirthData = { dob, tob, pob };
+    hideAll();
+    document.getElementById("screen-step2").classList.remove("hidden");
+  }
+
+  function backToStep1() {
+    hideAll();
+    document.getElementById("screen-step1").classList.remove("hidden");
+  }
+
+  function showUnlockScreen() {
+    hideAll();
+    document.getElementById("screen-unlock").classList.remove("hidden");
+  }
+
+  async function createProfile() {
+    const name = document.getElementById("baby-name").value.trim();
+    const pass = document.getElementById("set-password").value.trim();
+
+    if (!name || !pass) {
+      alert("नाम और पासवर्ड दोनों आवश्यक हैं!");
+      return;
+    }
+
+    const payload = {
+      baby_name: name,
+      password: pass,
+      ...tempBirthData
+    };
+
+    try {
+      const res = await fetch("/api/create-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        currentProfile = data.profile;
+        openDashboard();
+      } else {
+        alert(data.message || "Error");
+      }
+    } catch (e) {
+      alert("सर्वर से संपर्क नहीं हो पाया!");
+    }
+  }
+
+  async function unlockProfile() {
+    const name = document.getElementById("unlock-name").value.trim();
+    const pass = document.getElementById("unlock-password").value.trim();
+
+    if (!name || !pass) {
+      alert("नाम और पासवर्ड भरें!");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/unlock-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: name, password: pass })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        currentProfile = data.profile;
+        openDashboard();
+      } else {
+        alert(data.message || "गलत पासवर्ड!");
+      }
+    } catch (e) {
+      alert("सर्वर एरर!");
+    }
+  }
+
+  function openDashboard() {
+    hideAll();
+    document.getElementById("screen-dashboard").classList.remove("hidden");
+    document.getElementById("dash-name").innerText = currentProfile.baby_name;
+    document.getElementById("dash-birthinfo").innerText = `${currentProfile.dob || ''} | ${currentProfile.tob || ''} | ${currentProfile.pob || ''}`;
+    renderLists();
+  }
+
+  function switchTab(type) {
+    if (type === 'medical') {
+      document.getElementById("sec-medical").classList.remove("hidden");
+      document.getElementById("sec-memories").classList.add("hidden");
+      document.getElementById("tab-btn-med").classList.add("active");
+      document.getElementById("tab-btn-mem").classList.remove("active");
+    } else {
+      document.getElementById("sec-medical").classList.add("hidden");
+      document.getElementById("sec-memories").classList.remove("hidden");
+      document.getElementById("tab-btn-med").classList.remove("active");
+      document.getElementById("tab-btn-mem").classList.add("active");
+    }
+  }
+
+  async function addEntry(type) {
+    const inputEl = type === 'medical_logs' ? document.getElementById("med-input") : document.getElementById("mem-input");
+    const val = inputEl.value.trim();
+    if (!val) return;
+
+    const entryObj = {
+      text: val,
+      date: new Date().toLocaleDateString('hi-IN')
+    };
+
+    try {
+      const res = await fetch("/api/add-record", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile_id: currentProfile.profile_id,
+          type: type,
+          entry: entryObj
+        })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        currentProfile = data.profile;
+        inputEl.value = "";
+        renderLists();
+      }
+    } catch (e) {
+      alert("डेटा सुरक्षित नहीं हो सका!");
+    }
+  }
+
+  function renderLists() {
+    const medContainer = document.getElementById("med-list");
+    medContainer.innerHTML = "";
+    (currentProfile.medical_logs || []).slice().reverse().forEach(item => {
+      medContainer.innerHTML += `
+        <div class="list-item">
+          <div class="list-item-header"><span>चिकित्सा प्रविष्टि</span><span>${item.date}</span></div>
+          <div class="list-item-body">${item.text}</div>
+        </div>`;
+    });
+
+    const memContainer = document.getElementById("mem-list");
+    memContainer.innerHTML = "";
+    (currentProfile.memories || []).slice().reverse().forEach(item => {
+      memContainer.innerHTML += `
+        <div class="list-item">
+          <div class="list-item-header"><span>स्मृति / माइलस्टोन</span><span>${item.date}</span></div>
+          <div class="list-item-body">${item.text}</div>
+        </div>`;
+    });
+  }
+
+  function lockOut() {
+    currentProfile = null;
+    hideAll();
+    document.getElementById("screen-unlock").classList.remove("hidden");
+  }
+</script>
+</body>
+</html>
