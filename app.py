@@ -35,16 +35,9 @@ PWA_MANIFEST = {
 }
 
 SERVICE_WORKER_JS = """
-const CACHE_NAME = 'nanhi-duniya-v1';
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
-self.addEventListener('activate', (e) => {
-  e.waitUntil(clients.claim());
-});
-self.addEventListener('fetch', (e) => {
-  // Let network handle dynamic API; cache fallback handled internally
-});
+self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
+self.addEventListener('fetch', (e) => {});
 """
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -54,7 +47,6 @@ HTML_PAGE = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nanhi Duniya - Vedic Janmapatri & Lifetime Memory Vault</title>
   
-  <!-- PWA Meta -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#78350F">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -74,7 +66,6 @@ HTML_PAGE = """<!DOCTYPE html>
     .grah-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 2px; }
     .grah-badge { background: #EEF2FF; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 1px 3px; border-radius: 4px; border: 1px solid #DBEAFE; }
 
-    /* Clean A4 Print Canvas */
     #pdfPrintCanvas {
       width: 794px;
       background: #FFFDF9;
@@ -88,7 +79,7 @@ HTML_PAGE = """<!DOCTYPE html>
 </head>
 <body class="text-stone-800 pb-28 min-h-screen">
 
-  <!-- Desktop & Mobile Responsive Header -->
+  <!-- Header -->
   <header class="py-3.5 px-4 md:px-8 border-b border-stone-200 bg-white sticky top-0 z-50 shadow-xs">
     <div class="max-w-6xl mx-auto flex justify-between items-center">
       <div class="flex items-center gap-3">
@@ -100,14 +91,13 @@ HTML_PAGE = """<!DOCTYPE html>
             Nanhi Duniya
           </h1>
           <div class="flex items-center gap-2 mt-0.5">
-            <p class="text-[10px] md:text-xs text-stone-500 font-medium hidden sm:block">Vedic Janmapatri • Scriptural Naming • Digital Lifetime Vault</p>
+            <p class="text-[10px] md:text-xs text-stone-500 font-medium hidden sm:block">Vedic Janmapatri • Scriptural Naming • Digital Health & Memory Vault</p>
             <span id="syncStatusBadge" class="text-[9px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-bold">● Offline Ready</span>
           </div>
         </div>
       </div>
 
       <div class="flex items-center gap-2.5">
-        <!-- PWA Install Prompt Button -->
         <button id="pwaInstallBtn" onclick="installPWA()" class="hidden text-xs bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl font-bold items-center gap-1.5 transition">
           <span>📲</span> <span class="hidden sm:inline">Install App</span>
         </button>
@@ -138,10 +128,9 @@ HTML_PAGE = """<!DOCTYPE html>
     <!-- MAIN TWO-COLUMN RESPONSIVE GRID -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      <!-- LEFT COLUMN: Kundli Generator & Astro Pillars (5 Cols on Desktop) -->
+      <!-- LEFT COLUMN: Kundli & Birth Form -->
       <div class="lg:col-span-5 space-y-6">
         
-        <!-- STEP 1: Birth Details Form -->
         <div id="stepBirthForm" class="glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
           <div class="flex justify-between items-center">
             <h2 class="text-base font-bold text-stone-800 flex items-center gap-2">
@@ -171,7 +160,6 @@ HTML_PAGE = """<!DOCTYPE html>
             </button>
           </div>
 
-          <!-- Kundli & Akshar Results -->
           <div id="kundliResult" class="hidden mt-4 pt-4 border-t border-stone-200 space-y-4">
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200">
@@ -189,7 +177,6 @@ HTML_PAGE = """<!DOCTYPE html>
               <div class="flex justify-between"><span class="text-stone-500 font-medium">Quarter (Pada):</span><span id="resPada" class="font-bold text-stone-900"></span></div>
               <div class="flex justify-between items-center pt-2 border-t border-stone-200">
                 <span class="text-stone-700 font-bold">Vedic Naming Syllable:</span>
-                <!-- Scriptural letter remains purely in Devanagari Hindi -->
                 <span id="resAkshar" class="text-3xl font-black text-amber-800 font-serif"></span>
               </div>
             </div>
@@ -221,7 +208,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
       </div>
 
-      <!-- RIGHT COLUMN: Naming Engine & Vault Journal (7 Cols on Desktop) -->
+      <!-- RIGHT COLUMN: Naming & Lifetime Vault (Milestones + Vaccination) -->
       <div class="lg:col-span-7 space-y-6">
 
         <!-- STEP 2: Naming Engine -->
@@ -258,7 +245,7 @@ HTML_PAGE = """<!DOCTYPE html>
           <div class="pt-3 border-t border-stone-200 text-xs space-y-2">
             <p class="font-bold text-stone-700">Or type your own pre-decided name:</p>
             <div class="flex gap-2">
-              <input type="text" id="customNameInput" placeholder="e.g., Aarav, Anika, Vihaan..." class="flex-1 p-2.5 rounded-xl border border-stone-300">
+              <input type="text" id="customNameInput" placeholder="e.g., Shivansh, Aarav, Anika..." class="flex-1 p-2.5 rounded-xl border border-stone-300">
               <button onclick="useCustomName()" class="px-4 py-2.5 bg-stone-900 hover:bg-black text-white font-bold rounded-xl active:scale-95 transition">
                 Select
               </button>
@@ -288,7 +275,7 @@ HTML_PAGE = """<!DOCTYPE html>
           <div class="space-y-2 text-xs">
             <label class="block font-bold text-stone-700">Create a Secret Master Password (Family Key):</label>
             <input type="password" id="masterPasswordInput" placeholder="Keep this password safe with your family" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none font-medium">
-            <p class="text-[10px] text-stone-500">✦ Neither other parents nor cloud admins can ever view your baby's memories without this key.</p>
+            <p class="text-[10px] text-stone-500">✦ Neither other parents nor cloud admins can ever view your baby's memories & health records without this key.</p>
             
             <button onclick="createBabyProfileVault()" class="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
               Lock Profile & Open Milestone Vault ➔
@@ -296,19 +283,18 @@ HTML_PAGE = """<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- DEDICATED LIFETIME MILESTONE VAULT DASHBOARD -->
+        <!-- DEDICATED LIFETIME MILESTONE & VACCINATION VAULT -->
         <div id="vaultDashboard" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-5">
           <div class="flex justify-between items-center border-b border-stone-200 pb-3">
             <div>
               <h2 class="text-lg font-black text-amber-950 flex items-center gap-1.5">
-                <span>📖</span> <span id="vaultHeadingBabyName">Baby</span>'s Lifetime Memory Vault
+                <span>📖</span> <span id="vaultHeadingBabyName">Baby</span>'s Lifetime Memory & Health Vault
               </h2>
-              <p class="text-[11px] text-stone-500">Scriptural Birth Journal, Questions & Personal Memories</p>
+              <p class="text-[11px] text-stone-500">Janmapatri, Memories, Questions & Vaccination Schedule</p>
             </div>
             <span class="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">Encrypted Vault</span>
           </div>
 
-          <!-- Quick Astro Pillars Strip inside Vault -->
           <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs grid grid-cols-2 md:grid-cols-4 gap-2">
             <div><span class="text-[10px] text-stone-500 block">Lagna</span><strong id="vLagnaText">-</strong></div>
             <div><span class="text-[10px] text-stone-500 block">Rashi</span><strong id="vRashiText">-</strong></div>
@@ -316,57 +302,109 @@ HTML_PAGE = """<!DOCTYPE html>
             <div><span class="text-[10px] text-stone-500 block">Syllable</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
           </div>
 
-          <!-- Add Milestone Form -->
+          <!-- DUAL ENTRY: Switch between General Memory & Vaccination Record -->
           <div class="p-4 bg-gradient-to-b from-stone-50 to-white rounded-2xl border border-stone-200 text-xs space-y-3 shadow-xs">
-            <p class="font-bold text-stone-800 flex items-center gap-1.5">
-              <span>✍️</span> Record New Memory or Milestone:
-            </p>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <select id="milestoneType" onchange="toggleCustomQuestion()" class="p-2.5 rounded-xl border border-stone-300 bg-white font-semibold">
-                <option value="PRESET">Standard Milestone</option>
-                <option value="CUSTOM">Custom Question / Special Moment</option>
-              </select>
-              <input type="date" id="mEventDate" class="p-2.5 rounded-xl border border-stone-300 bg-white">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-stone-800 flex items-center gap-1.5">
+                <span>✍️</span> Record New Entry in Vault:
+              </span>
+              <div class="flex gap-1 bg-stone-200 p-0.5 rounded-xl font-bold text-[11px]">
+                <button id="tabMemoryBtn" onclick="switchEntryTab('memory')" class="px-2.5 py-1 rounded-lg bg-white text-stone-900 shadow-2xs">🌟 Memory / Question</button>
+                <button id="tabVaccineBtn" onclick="switchEntryTab('vaccine')" class="px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900">💉 Vaccination Record</button>
+              </div>
             </div>
 
-            <div id="presetSelectDiv">
-              <select id="mPresetTag" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white font-medium">
-                <option value="FIRST_SMILE">First Sweet Smile (पहली मुस्कान)</option>
-                <option value="FIRST_STEP">First Steps Taken (पहला कदम)</option>
-                <option value="FIRST_FOOD">First Solid Food / Annaprashan (अन्नप्राशन)</option>
-                <option value="FIRST_WORD">First Words Spoken (पहला शब्द)</option>
-                <option value="FIRST_TRIP">First Family Vacation / Grandparents Home</option>
-                <option value="FAV_TOY">First Favorite Toy & Games</option>
-                <option value="SWEET_HABIT">Cutest Sleeping & Smiling Habit</option>
-              </select>
+            <!-- TAB 1: General Memory / Milestone Form -->
+            <div id="formMemorySection" class="space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <select id="milestoneType" onchange="toggleCustomQuestion()" class="p-2.5 rounded-xl border border-stone-300 bg-white font-semibold">
+                  <option value="PRESET">Standard Milestone</option>
+                  <option value="CUSTOM">Custom Question / Special Moment</option>
+                </select>
+                <input type="date" id="mEventDate" class="p-2.5 rounded-xl border border-stone-300 bg-white">
+              </div>
+
+              <div id="presetSelectDiv">
+                <select id="mPresetTag" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white font-medium">
+                  <option value="FIRST_SMILE">First Sweet Smile (पहली मुस्कान)</option>
+                  <option value="FIRST_STEP">First Steps Taken (पहला कदम)</option>
+                  <option value="FIRST_FOOD">First Solid Food / Annaprashan (अन्नप्राशन)</option>
+                  <option value="FIRST_WORD">First Words Spoken (पहला शब्द)</option>
+                  <option value="FIRST_TRIP">First Family Vacation / Grandparents Home</option>
+                  <option value="FAV_TOY">First Favorite Toy & Games</option>
+                  <option value="SWEET_HABIT">Cutest Sleeping & Smiling Habit</option>
+                </select>
+              </div>
+
+              <div id="customQuestionDiv" class="hidden">
+                <input type="text" id="mCustomQuestion" placeholder="e.g., How did baby react to first rain? Or first lullaby reaction?" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+              </div>
+
+              <textarea id="mNotes" rows="2" placeholder="Describe the emotions, stories, family reactions and details of this moment..." class="w-full p-3 rounded-xl border border-stone-300 bg-white leading-relaxed outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+
+              <button type="button" onclick="saveNewMilestone()" class="w-full py-2.5 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
+                Save Memory to Vault (AES-256)
+              </button>
             </div>
 
-            <div id="customQuestionDiv" class="hidden">
-              <input type="text" id="mCustomQuestion" placeholder="e.g., How did baby react to first rain? Or first song they loved?" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+            <!-- TAB 2: Vaccination Schedule & Experience Form -->
+            <div id="formVaccineSection" class="hidden space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block font-semibold text-stone-600 mb-1">Vaccine Name</label>
+                  <input type="text" id="vName" list="vaccinePresets" placeholder="e.g., Infanrix Hexa, Synflorix, Rotasil..." class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+                  <datalist id="vaccinePresets">
+                    <option value="Infanrix Hexa (HIB + Hep B + IPV + DTP)">
+                    <option value="Synflorix (PCV 2)">
+                    <option value="Rotasil (Rotavirus)">
+                    <option value="BCG + OPV 0 + Hep B">
+                    <option value="MMR 1">
+                    <option value="Typhoid Conjugate Vaccine">
+                  </datalist>
+                </div>
+                <div>
+                  <label class="block font-semibold text-stone-600 mb-1">Clinic / Hospital / Doctor</label>
+                  <input type="text" id="vClinic" placeholder="e.g., Dr. Ajay Agrawal / City Child Clinic" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block font-semibold text-stone-600 mb-1">Date Given (दिनांक)</label>
+                  <input type="date" id="vDateGiven" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+                </div>
+                <div>
+                  <label class="block font-semibold text-stone-600 mb-1">Next Vaccine Due Date (अगली तारीख)</label>
+                  <input type="date" id="vNextDue" class="w-full p-2.5 rounded-xl border border-stone-300 bg-white">
+                </div>
+              </div>
+
+              <div>
+                <label class="block font-semibold text-stone-600 mb-1">Baby's Experience & Memory</label>
+                <textarea id="vExperience" rows="2" placeholder="Kitna roya, fever aaya kya, kiske godi me chup hua, doctor ne kya bola..." class="w-full p-2.5 rounded-xl border border-stone-300 bg-white leading-relaxed outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+              </div>
+
+              <button type="button" onclick="saveVaccinationRecord()" class="w-full py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
+                💉 Save Vaccination & Memory to Vault
+              </button>
             </div>
 
-            <textarea id="mNotes" rows="3" placeholder="Describe the emotions, stories, family reactions and details of this cherished moment..." class="w-full p-3 rounded-xl border border-stone-300 bg-white leading-relaxed outline-none focus:ring-2 focus:ring-amber-500"></textarea>
-
-            <button type="button" onclick="saveNewMilestone()" class="w-full py-3 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold active:scale-95 transition shadow-sm">
-              Save Securely to Vault (AES-256)
-            </button>
           </div>
 
           <!-- Actions Bar -->
           <div class="pt-1 flex justify-between items-center">
             <button type="button" onclick="triggerSyncAndReload()" class="text-xs text-amber-800 font-bold underline">
-              Sync / Refresh Memories ↻
+              Sync / Refresh Feed ↻
             </button>
             <button type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-4 py-2 rounded-xl font-bold shadow-xs active:scale-95 transition flex items-center gap-1.5">
               <span>📖</span> Export Royal Album PDF
             </button>
           </div>
 
-          <!-- Milestone Journal Feed -->
+          <!-- Combined Feed of Milestones & Vaccinations -->
           <div id="albumView" class="space-y-3"></div>
 
-          <!-- Utility & Password-Protected Delete Section -->
+          <!-- Utility & Danger Zone -->
           <div class="pt-4 border-t border-stone-200 text-xs space-y-3">
             <div class="flex gap-2">
               <button onclick="downloadBackupFile()" class="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold border border-stone-300 transition">
@@ -378,7 +416,6 @@ HTML_PAGE = """<!DOCTYPE html>
               </label>
             </div>
 
-            <!-- Danger Zone -->
             <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-rose-950 space-y-2">
               <div class="flex justify-between items-center">
                 <span class="font-bold flex items-center gap-1.5 text-[11px] text-rose-900">
@@ -389,7 +426,7 @@ HTML_PAGE = """<!DOCTYPE html>
                 </button>
               </div>
               <div id="deleteVaultDiv" class="hidden pt-2 border-t border-rose-200 space-y-2">
-                <p class="text-[10px] text-rose-800 leading-relaxed">This action will permanently wipe this baby's Janmapatri and all encrypted memories from the server. Enter Master Password to confirm:</p>
+                <p class="text-[10px] text-rose-800 leading-relaxed">This action will permanently wipe this baby's Janmapatri, health records, and all encrypted memories. Enter Master Password to confirm:</p>
                 <div class="flex gap-2">
                   <input type="password" id="deleteConfirmPassword" placeholder="Enter Master Password" class="flex-1 p-2 bg-white rounded-lg border border-rose-300 outline-none">
                   <button onclick="confirmDeleteVault()" class="px-3.5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-lg font-bold text-xs active:scale-95 transition">
@@ -417,12 +454,12 @@ HTML_PAGE = """<!DOCTYPE html>
         </h3>
         <button onclick="toggleVaultModal()" class="text-stone-400 hover:text-stone-700 font-black text-sm">✕</button>
       </div>
-      <p class="text-xs text-stone-500 leading-relaxed">Enter your baby's exact name and family master password to unlock and sync all encrypted memories:</p>
+      <p class="text-xs text-stone-500 leading-relaxed">Enter your baby's exact name and family master password to unlock and sync all encrypted memories & health logs:</p>
 
       <div class="space-y-3 text-xs">
         <div>
           <label class="block font-semibold text-stone-700 mb-1">Baby Name</label>
-          <input type="text" id="loginBabyName" placeholder="e.g., Aarav" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none focus:ring-2 focus:ring-amber-500 font-medium">
+          <input type="text" id="loginBabyName" placeholder="e.g., Shivansh" class="w-full p-2.5 rounded-xl border border-stone-300 outline-none focus:ring-2 focus:ring-amber-500 font-medium">
         </div>
         <div>
           <label class="block font-semibold text-stone-700 mb-1">Master Password</label>
@@ -439,13 +476,11 @@ HTML_PAGE = """<!DOCTYPE html>
   <div style="position: absolute; left: -9999px; top: 0;">
     <div id="pdfPrintCanvas">
       
-      <!-- Royal Header -->
       <div style="text-align: center; border-bottom: 2px solid #92400E; padding-bottom: 12px; margin-bottom: 18px;">
-        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">Official Vedic Janmapatri & Lifetime Milestone Journal</span>
+        <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">Official Vedic Janmapatri, Health & Lifetime Journal</span>
         <h1 style="font-family: 'Rozha One', serif; font-size: 28px; color: #78350F; margin: 4px 0 0 0;">🌸 Nanhi Duniya</h1>
       </div>
 
-      <!-- Identity Strip -->
       <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; border: 1.5px solid #F59E0B; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px;">
         <div>
           <span style="font-size: 10px; color: #92400E; font-weight: bold; text-transform: uppercase;">Baby Name</span>
@@ -458,7 +493,6 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Astrological 4-Pillar Grid -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; text-align: center; font-size: 11px;">
         <div style="background: #F5F5F4; padding: 8px; border-radius: 6px; border: 1px solid #E7E5E4;">
           <span style="color: #78716C; font-size: 9px; display: block;">Ascendant (Lagna)</span>
@@ -478,22 +512,20 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Lagna Chart Render (Scaled correctly without cut-off) -->
       <div style="text-align: center; margin-bottom: 24px;">
         <p style="font-size: 12px; font-weight: bold; color: #78350F; margin-bottom: 8px; letter-spacing: 0.5px;">Scriptural Vedic Lagna Chakra (9 Planetary Glyphs)</p>
         <div id="pdfChartClone" style="display: inline-block;"></div>
       </div>
 
-      <!-- Milestone Journal Cards -->
+      <!-- Combined Milestones & Health Record in PDF -->
       <div style="border-top: 2px dashed #B45309; padding-top: 18px;">
         <div style="text-align: center; margin-bottom: 12px;">
-          <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0;">📖 Lifetime Milestone Journal & Memories</h3>
-          <p style="font-size: 10px; color: #78716C; margin: 2px 0 0 0;">(Parent's Recorded Stories, Questions & Moments)</p>
+          <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0;">📖 Lifetime Milestones, Memories & Immunization Journal</h3>
+          <p style="font-size: 10px; color: #78716C; margin: 2px 0 0 0;">(Parent's Recorded Stories, Vaccinations & Cherished Moments)</p>
         </div>
         <div id="pdfMilestoneList" style="font-size: 11px;"></div>
       </div>
 
-      <!-- Footer Seal -->
       <div style="margin-top: 35px; text-align: center; font-size: 9px; color: #A8A29E; border-top: 1px solid #E7E5E4; padding-top: 8px;">
         🔒 Zero-Knowledge AES-256 Encrypted Lifetime Journal • Official Nanhi Duniya Record
       </div>
@@ -501,7 +533,6 @@ HTML_PAGE = """<!DOCTYPE html>
   </div>
 
   <script>
-    let currentLang = 'en';
     let currentLetter = "खी";
     let selectedGender = "All";
     let namingMode = "strict";
@@ -522,7 +553,6 @@ HTML_PAGE = """<!DOCTYPE html>
       localStorage.setItem('nd_offline_queue', JSON.stringify(q));
     }
 
-    // PWA Service Worker Registration & Install Hook
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW error:', err));
@@ -576,11 +606,26 @@ HTML_PAGE = """<!DOCTYPE html>
       document.getElementById('deleteVaultDiv').classList.toggle('hidden');
     }
 
+    function switchEntryTab(tab) {
+      if (tab === 'memory') {
+        document.getElementById('formMemorySection').classList.remove('hidden');
+        document.getElementById('formVaccineSection').classList.add('hidden');
+        document.getElementById('tabMemoryBtn').className = "px-2.5 py-1 rounded-lg bg-white text-stone-900 shadow-2xs";
+        document.getElementById('tabVaccineBtn').className = "px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900";
+      } else {
+        document.getElementById('formVaccineSection').classList.remove('hidden');
+        document.getElementById('formMemorySection').classList.add('hidden');
+        document.getElementById('tabVaccineBtn').className = "px-2.5 py-1 rounded-lg bg-white text-stone-900 shadow-2xs";
+        document.getElementById('tabMemoryBtn').className = "px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900";
+        document.getElementById('vDateGiven').value = new Date().toISOString().split('T')[0];
+      }
+    }
+
     async function confirmDeleteVault() {
       const pwd = document.getElementById('deleteConfirmPassword').value.trim();
       if (!pwd) return alert("Please enter master password to proceed");
 
-      if (!confirm("Are you sure you want to permanently delete this baby vault and all milestones? This cannot be undone!")) {
+      if (!confirm("Are you sure you want to permanently delete this baby vault and all records? This cannot be undone!")) {
         return;
       }
 
@@ -603,18 +648,6 @@ HTML_PAGE = """<!DOCTYPE html>
       } catch (e) {
         alert("Server connection failed: " + e.message);
       }
-    }
-
-    function switchLanguage(lang) {
-      currentLang = lang;
-      if (lang === 'en') {
-        document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
-        document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
-      } else {
-        document.getElementById('langHiBtn').className = "px-2 py-1 rounded-lg bg-amber-800 text-white transition";
-        document.getElementById('langEnBtn').className = "px-2 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition";
-      }
-      fetchAINames();
     }
 
     function setNamingMode(mode) {
@@ -887,6 +920,7 @@ HTML_PAGE = """<!DOCTYPE html>
       }
     }
 
+    // SAVE GENERAL MEMORY
     async function saveNewMilestone() {
       if (!activeSession.profileHash || !activeSession.passphrase) return alert("Please login to vault first");
 
@@ -910,6 +944,7 @@ HTML_PAGE = """<!DOCTYPE html>
         passphrase: activeSession.passphrase,
         event_tag: eventTag,
         details: { 
+          category: "MEMORY",
           title: eventTag, 
           notes: notes, 
           eventDate: eventDate,
@@ -917,12 +952,55 @@ HTML_PAGE = """<!DOCTYPE html>
         }
       };
 
+      await dispatchVaultSave(payload, "Memory saved to vault!");
+      document.getElementById('mNotes').value = "";
+      if (type === 'CUSTOM') document.getElementById('mCustomQuestion').value = "";
+    }
+
+    // SAVE VACCINATION WITH EXPERIENCE & CLINIC DETAILS
+    async function saveVaccinationRecord() {
+      if (!activeSession.profileHash || !activeSession.passphrase) return alert("Please login to vault first");
+
+      const vName = document.getElementById('vName').value.trim();
+      const vClinic = document.getElementById('vClinic').value.trim() || "Local Pediatric Clinic";
+      const vDateGiven = document.getElementById('vDateGiven').value;
+      const vNextDue = document.getElementById('vNextDue').value;
+      const vExp = document.getElementById('vExperience').value.trim();
+
+      if (!vName) return alert("Please enter vaccine name");
+      if (!vDateGiven) return alert("Please specify date given");
+
+      const eventTag = `💉 Vaccine: ${vName}`;
+      const payload = {
+        profile_hash: activeSession.profileHash,
+        passphrase: activeSession.passphrase,
+        event_tag: eventTag,
+        details: {
+          category: "VACCINE",
+          vaccineName: vName,
+          clinic: vClinic,
+          dateGiven: vDateGiven,
+          nextDue: vNextDue,
+          experience: vExp,
+          eventDate: vDateGiven,
+          savedAt: new Date().toLocaleDateString('en-IN')
+        }
+      };
+
+      await dispatchVaultSave(payload, "Vaccination record & memory saved to vault!");
+      document.getElementById('vName').value = "";
+      document.getElementById('vClinic').value = "";
+      document.getElementById('vExperience').value = "";
+      document.getElementById('vNextDue').value = "";
+    }
+
+    async function dispatchVaultSave(payload, successMsg) {
       if (!navigator.onLine) {
         const q = getOfflineQueue();
         q.push(payload);
         setOfflineQueue(q);
-        alert("⚠️ Offline! Memory saved locally and queued for auto-sync.");
-        renderLocalMilestone(payload);
+        alert("⚠️ Offline! Saved locally and queued for cloud sync.");
+        renderLocalEntry(payload);
       } else {
         try {
           await fetch('/api/milestones/add', {
@@ -930,22 +1008,19 @@ HTML_PAGE = """<!DOCTYPE html>
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          alert("🎉 Memory securely saved to AES-256 cloud vault!");
+          alert(`🎉 ${successMsg}`);
           triggerSyncAndReload();
         } catch (e) {
           const q = getOfflineQueue();
           q.push(payload);
           setOfflineQueue(q);
           alert("Server unreachable. Queued in offline storage.");
-          renderLocalMilestone(payload);
+          renderLocalEntry(payload);
         }
       }
-
-      document.getElementById('mNotes').value = "";
-      if (type === 'CUSTOM') document.getElementById('mCustomQuestion').value = "";
     }
 
-    function renderLocalMilestone(item) {
+    function renderLocalEntry(item) {
       const container = document.getElementById('albumView');
       const d = item.details;
       container.innerHTML = `
@@ -956,7 +1031,7 @@ HTML_PAGE = """<!DOCTYPE html>
             </span>
             <span class="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">Pending Cloud Sync</span>
           </div>
-          <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || ''}</p>
+          <p class="text-stone-700 whitespace-pre-wrap leading-relaxed">${d.notes || d.experience || ''}</p>
         </div>` + container.innerHTML;
     }
 
@@ -995,23 +1070,42 @@ HTML_PAGE = """<!DOCTYPE html>
           container.innerHTML = `
             <div class="p-6 text-center border-2 border-dashed border-stone-200 rounded-2xl bg-white/50">
               <span class="text-2xl block mb-1">🕊️</span>
-              <p class="text-xs text-stone-500 font-medium">No memories recorded yet. Record your first moment above!</p>
+              <p class="text-xs text-stone-500 font-medium">No memories or vaccination records saved yet. Record your first moment above!</p>
             </div>`;
           return;
         }
 
         list.forEach(item => {
           const d = item.data;
-          container.innerHTML += `
-            <div class="p-4 bg-white rounded-2xl border border-stone-200/90 text-xs space-y-2 shadow-xs hover:border-amber-200 transition">
-              <div class="flex justify-between items-center">
-                <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1.5">
-                  <span class="text-amber-700">✦</span> ${item.event_tag}
-                </span>
-                <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2.5 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
-              </div>
-              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-3 rounded-xl border border-stone-100">${d.notes || ''}</p>
-            </div>`;
+          const isVaccine = d.category === "VACCINE" || item.event_tag.includes("Vaccine");
+
+          if (isVaccine) {
+            container.innerHTML += `
+              <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-200 text-xs space-y-2 shadow-xs hover:border-blue-400 transition">
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold text-blue-950 text-sm flex items-center gap-1.5">
+                    <span>💉</span> ${d.vaccineName || item.event_tag}
+                  </span>
+                  <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded-full">Date: ${d.dateGiven || d.eventDate}</span>
+                </div>
+                <div class="flex justify-between text-[11px] text-stone-600 bg-white/70 p-2 rounded-xl border border-blue-100">
+                  <span><strong>Place/Doctor:</strong> ${d.clinic || 'Clinic'}</span>
+                  ${d.nextDue ? `<span class="text-rose-700 font-bold">Next Due: ${d.nextDue}</span>` : ''}
+                </div>
+                ${d.experience ? `<p class="text-stone-700 leading-relaxed text-[12px] bg-white p-2.5 rounded-xl border border-stone-200"><strong>Baby's Reaction & Memory:</strong> ${d.experience}</p>` : ''}
+              </div>`;
+          } else {
+            container.innerHTML += `
+              <div class="p-4 bg-white rounded-2xl border border-stone-200/90 text-xs space-y-2 shadow-xs hover:border-amber-200 transition">
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1.5">
+                    <span class="text-amber-700">✦</span> ${item.event_tag}
+                  </span>
+                  <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2.5 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
+                </div>
+                <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-3 rounded-xl border border-stone-100">${d.notes || ''}</p>
+              </div>`;
+          }
         });
       } catch (err) {
         console.warn("Could not fetch remote milestones:", err);
@@ -1044,26 +1138,43 @@ HTML_PAGE = """<!DOCTYPE html>
       const pdfMilestoneContainer = document.getElementById('pdfMilestoneList');
       pdfMilestoneContainer.innerHTML = "";
       if (currentSavedMilestones.length === 0) {
-        pdfMilestoneContainer.innerHTML = "<p style='color: #78716C; font-style: italic; text-align: center; padding: 10px;'>No memories recorded yet in this journal.</p>";
+        pdfMilestoneContainer.innerHTML = "<p style='color: #78716C; font-style: italic; text-align: center; padding: 10px;'>No memories or health records in vault yet.</p>";
       } else {
         currentSavedMilestones.forEach(item => {
           const d = item.data;
-          pdfMilestoneContainer.innerHTML += `
-            <div style="background: #FFFFFF; border: 1.5px solid #FDE68A; border-left: 4px solid #D97706; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; page-break-inside: avoid;">
-              <div style="display: flex; justify-content: space-between; font-weight: bold; color: #78350F; margin-bottom: 6px;">
-                <span style="font-size: 13px;">✦ ${item.event_tag}</span>
-                <span style="font-size: 10px; color: #78716C;">${d.eventDate || d.savedAt || ''}</span>
+          const isVaccine = d.category === "VACCINE" || item.event_tag.includes("Vaccine");
+
+          if (isVaccine) {
+            pdfMilestoneContainer.innerHTML += `
+              <div style="background: #F0F9FF; border: 1.5px solid #BAE6FD; border-left: 4px solid #0284C7; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold; color: #0369A1; margin-bottom: 4px;">
+                  <span style="font-size: 13px;">💉 ${d.vaccineName || item.event_tag}</span>
+                  <span style="font-size: 10px; color: #0284C7;">Date: ${d.dateGiven || d.eventDate}</span>
+                </div>
+                <div style="font-size: 10px; color: #334155; margin-bottom: 4px;">
+                  <strong>Administered at:</strong> ${d.clinic || 'Clinic'} ${d.nextDue ? ` | <span style="color: #BE123C; font-weight: bold;">Next Due: ${d.nextDue}</span>` : ''}
+                </div>
+                ${d.experience ? `<p style="margin: 0; color: #1E293B; line-height: 1.4; font-size: 11px;"><strong>Reaction & Story:</strong> ${d.experience}</p>` : ''}
               </div>
-              <p style="margin: 0; color: #44403C; line-height: 1.5; font-size: 11px; white-space: pre-wrap;">${d.notes || ''}</p>
-            </div>
-          `;
+            `;
+          } else {
+            pdfMilestoneContainer.innerHTML += `
+              <div style="background: #FFFFFF; border: 1.5px solid #FDE68A; border-left: 4px solid #D97706; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold; color: #78350F; margin-bottom: 6px;">
+                  <span style="font-size: 13px;">✦ ${item.event_tag}</span>
+                  <span style="font-size: 10px; color: #78716C;">${d.eventDate || d.savedAt || ''}</span>
+                </div>
+                <p style="margin: 0; color: #44403C; line-height: 1.5; font-size: 11px; white-space: pre-wrap;">${d.notes || ''}</p>
+              </div>
+            `;
+          }
         });
       }
 
       const certElement = document.getElementById('pdfPrintCanvas');
       const opt = {
         margin: [6, 6, 6, 6],
-        filename: `${activeSession.babyName}_Vedic_Janmapatri_Album.pdf`,
+        filename: `${activeSession.babyName}_Vedic_Janmapatri_Health_Album.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -1105,7 +1216,7 @@ HTML_PAGE = """<!DOCTYPE html>
             body: JSON.stringify(jsonContent)
           });
           const result = await res.json();
-          alert(`🎉 Backup restored successfully! (${result.imported} memories synced)`);
+          alert(`🎉 Backup restored successfully! (${result.imported} records synced)`);
           triggerSyncAndReload();
         } catch (err) {
           alert("Invalid backup file: " + err.message);
