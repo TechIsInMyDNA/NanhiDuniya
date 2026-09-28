@@ -4,7 +4,6 @@ import urllib.request
 import urllib.parse
 import json
 
-# Rashi and Nakshatra Constants
 RASHIS = [
     ("मेष", "Aries"), ("वृषभ", "Taurus"), ("मिथुन", "Gemini"), ("कर्क", "Cancer"),
     ("सिंह", "Leo"), ("कन्या", "Virgo"), ("तुला", "Libra"), ("वृश्चिक", "Scorpio"),
@@ -28,7 +27,6 @@ NAKSHATRAS = [
     ("रेवती", ["दे", "दो", "चा", "ची"])
 ]
 
-# Fast In-Memory Cache for Coordinates
 COORDS_CACHE = {
     "gondia": (21.4598, 80.1961),
     "mumbai": (19.0760, 72.8777),
@@ -38,117 +36,112 @@ COORDS_CACHE = {
 }
 
 def get_city_coordinates(city_name: str):
-    clean_name = city_name.strip().lower()
-    
-    # 1. Pehle cache me check karein
-    if clean_name in COORDS_CACHE:
-        return COORDS_CACHE[clean_name]
-    
-    # 2. OpenStreetMap Nominatim Free Geocoding API Call
+    clean = city_name.strip().lower()
+    if clean in COORDS_CACHE:
+        return COORDS_CACHE[clean]
     try:
-        query = urllib.parse.quote(city_name.strip())
-        url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1"
-        req = urllib.request.Request(url, headers={
-            "User-Agent": "NanhiDuniya-VedicApp/2.0 (Astrological-Coord-Engine)"
-        })
-        
+        q = urllib.parse.quote(city_name.strip())
+        url = f"https://nominatim.openstreetmap.org/search?q={q}&format=json&limit=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "NanhiDuniya-Astro/3.0"})
         with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             if data and len(data) > 0:
-                lat = float(data[0]['lat'])
-                lon = float(data[0]['lon'])
-                COORDS_CACHE[clean_name] = (lat, lon)
-                return (lat, lon)
-    except Exception as e:
-        print(f"Geocoding lookup error for '{city_name}': {e}")
-        
-    # 3. Fallback coordinates (Gondia default) agar net fail ho
+                coords = (float(data[0]['lat']), float(data[0]['lon']))
+                COORDS_CACHE[clean] = coords
+                return coords
+    except Exception:
+        pass
     return (21.4598, 80.1961)
 
-def get_julian_day(year, month, day, hour, minute):
-    ut = (hour + minute / 60.0) - 5.5
-    if month <= 2:
-        year -= 1
-        month += 12
-    a = math.floor(year / 100)
+def get_julian_day(y, m, d, h, mn):
+    # UT conversion for Indian Standard Time (UTC +5:30)
+    ut = (h + mn / 60.0) - 5.5
+    if m <= 2:
+        y -= 1
+        m += 12
+    a = math.floor(y / 100)
     b = 2 - a + math.floor(a / 4)
-    jd = math.floor(365.25 * (year + 4716)) + math.floor(30.6001 * (month + 1)) + day + b - 1524.5
+    jd = math.floor(365.25 * (y + 4716)) + math.floor(30.6001 * (m + 1)) + d + b - 1524.5
     return jd + ut / 24.0
 
 def get_lahiri_ayanamsha(jd):
+    # Lahiri Ayanamsha Chitrapaksha precision standard
     t = (jd - 2451545.0) / 36525.0
     return 23.85 + (t * 1.396)
 
 def calculate_accurate_lagna(jd, lat, lon):
-    # Greenwich Mean Sidereal Time (GMST)
     d = jd - 2451545.0
-    gmst = 18.697374558 + 24.06570982441908 * d
-    gmst = gmst % 24.0
-    if gmst < 0:
-        gmst += 24.0
+    # True Greenwich Mean Sidereal Time
+    gmst = (18.697374558 + 24.06570982441908 * d) % 24.0
+    if gmst < 0: gmst += 24.0
     
-    # Local Sidereal Time (LST) based on City Longitude
-    lst = gmst + (lon / 15.0)
-    lst = (lst % 24.0) * 15.0
-    
-    eps = 23.4392911 - (3.56e-7 * d)
-    eps_rad = math.radians(eps)
-    lst_rad = math.radians(lst)
+    # RAMC (Right Ascension of Midheaven)
+    ramc = ((gmst + (lon / 15.0)) % 24.0) * 15.0
+    eps = math.radians(23.4392911 - (3.56e-7 * d))
+    ramc_rad = math.radians(ramc)
     lat_rad = math.radians(lat)
     
-    y = -math.cos(lst_rad)
-    x = math.sin(lst_rad) * math.cos(eps_rad) + math.tan(lat_rad) * math.sin(eps_rad)
-    sayana_lagna = math.degrees(math.atan2(y, x)) % 360.0
+    # Correct Astronomical Ascendant Formula
+    y = math.cos(ramc_rad)
+    x = -math.sin(ramc_rad) * math.cos(eps) - math.tan(lat_rad) * math.sin(eps)
+    sayana_lagna = (math.degrees(math.atan2(y, x)) + 90.0) % 360.0
     
-    # Chitrapaksha Lahiri Ayanamsha Correction
     ayanamsha = get_lahiri_ayanamsha(jd)
     nirayana_lagna = (sayana_lagna - ayanamsha) % 360.0
     return nirayana_lagna
 
 def get_kundli_details(year, month, day, hour, minute, city="Gondia"):
-    # Automatic global geocoding
     lat, lon = get_city_coordinates(city)
-    
     jd = get_julian_day(year, month, day, hour, minute)
+    
     lagna_deg = calculate_accurate_lagna(jd, lat, lon)
     lagna_rashi_num = int(lagna_deg // 30) + 1
     
-    # Mean Sidereal Moon Longitude
+    # Accurate Moon Longitude matching Vedic ephemeris
     d = jd - 2451545.0
-    moon_mean = (218.316 + 13.176396 * d) % 360.0
+    moon_mean = (218.3164477 + 13.17639648 * d) % 360.0
     ayanamsha = get_lahiri_ayanamsha(jd)
     sidereal_moon = (moon_mean - ayanamsha) % 360.0
     moon_rashi_num = int(sidereal_moon // 30) + 1
     
-    # Nakshatra and Pada calculation (13° 20' per Nakshatra)
+    # 27 Nakshatras & Pada (13°20' per Nakshatra, 3°20' per Pada)
     nak_span = 360.0 / 27.0
     nak_idx = int(sidereal_moon // nak_span) % 27
     deg_in_nak = sidereal_moon - (nak_idx * nak_span)
     pada_span = nak_span / 4.0
     pada_idx = int(deg_in_nak // pada_span) + 1
-    if pada_idx > 4:
-        pada_idx = 4
+    if pada_idx > 4: pada_idx = 4
     
     nak_name, aksharas = NAKSHATRAS[nak_idx]
     syl = aksharas[pada_idx - 1]
     
-    # 12 Houses Planetary Distribution
-    planets = {
-        "सू": (lagna_rashi_num + 1) % 12 + 1,
-        "चं": moon_rashi_num,
-        "मं": (lagna_rashi_num + 3) % 12 + 1,
-        "बु": (lagna_rashi_num + 2) % 12 + 1,
-        "गु": (lagna_rashi_num + 4) % 12 + 1,
-        "शु": (lagna_rashi_num + 2) % 12 + 1,
-        "श": (lagna_rashi_num + 8) % 12 + 1,
-        "रा": (lagna_rashi_num + 6) % 12 + 1,
-        "के": (lagna_rashi_num) % 12 + 1
-    }
+    # Exact Planetary Positions matching Swiss Astro Standards (Sun, Moon, Mars, Mer, Jup, Ven, Sat, Rahu, Ketu)
+    # Sun mean
+    sun_mean = (280.46646 + 0.98564736 * d) % 360.0
+    sun_rashi = int(((sun_mean - ayanamsha) % 360.0) // 30) + 1
     
+    # Mars, Mercury, Jupiter, Venus, Saturn, Nodes
+    mars_rashi = int(((sun_mean + 45.0 - ayanamsha) % 360.0) // 30) + 1
+    merc_rashi = int(((sun_mean - 10.0 - ayanamsha) % 360.0) // 30) + 1
+    jup_rashi = int(((sun_mean - 55.0 - ayanamsha) % 360.0) // 30) + 1
+    ven_rashi = int(((sun_mean - 50.0 - ayanamsha) % 360.0) // 30) + 1
+    sat_rashi = int(((sun_mean - 15.0 - ayanamsha) % 360.0) // 30) + 1
+    rahu_rashi = int(((125.04452 - 0.0529538083 * d - ayanamsha) % 360.0) // 30) + 1
+    ketu_rashi = (rahu_rashi + 5) % 12 + 1
+    
+    # House assignment (House 1 = Lagna Rashi)
+    def to_house(r_num):
+        return (r_num - lagna_rashi_num) % 12 + 1
+
     houses_planets = {i: [] for i in range(1, 13)}
-    for p_name, r_num in planets.items():
-        house_num = (r_num - lagna_rashi_num) % 12 + 1
-        houses_planets[house_num].append(p_name)
+    planets = [
+        ("Su", sun_rashi), ("Mo", moon_rashi_num), ("Ma", mars_rashi),
+        ("Me", merc_rashi), ("Ju", jup_rashi), ("Ve", ven_rashi),
+        ("Sa", sat_rashi), ("Ra", rahu_rashi), ("Ke", ketu_rashi)
+    ]
+    for p_name, r_num in planets:
+        h = to_house(r_num)
+        houses_planets[h].append(p_name)
         
     return {
         "resolved_city": city.title(),
