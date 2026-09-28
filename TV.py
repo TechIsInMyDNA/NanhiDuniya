@@ -13,7 +13,6 @@ DB_FILE = "milestones.db"
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    # Blind hashed profile key and encrypted profile metadata table
     c.execute('''
         CREATE TABLE IF NOT EXISTS baby_profiles (
             profile_hash TEXT PRIMARY KEY,
@@ -23,7 +22,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    # Encrypted milestones table
     c.execute('''
         CREATE TABLE IF NOT EXISTS milestones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,10 +90,8 @@ def register_or_login_profile(baby_name: str, passphrase: str, meta_data: dict =
         return {"status": "ok", "profile_hash": prof_hash, "meta": meta, "is_new": False}
     else:
         if not meta_data:
-            meta_data = {
-                "baby_name": baby_name,
-                "created_at": datetime.datetime.now().isoformat()
-            }
+            conn.close()
+            return {"status": "error", "message": "Profile nahi mili. Kripya pehle naya banayein."}
         c_text, nonce, salt = encrypt_payload(passphrase, meta_data)
         c.execute('''
             INSERT INTO baby_profiles (profile_hash, enc_profile_meta, meta_nonce, meta_salt)
@@ -117,12 +113,39 @@ def add_profile_milestone(prof_hash: str, passphrase: str, event_tag: str, detai
     conn.commit()
     conn.close()
 
+def update_profile_milestone(item_id: int, prof_hash: str, passphrase: str, event_tag: str, details: dict):
+    init_db()
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT ciphertext, nonce, salt FROM milestones WHERE id = ? AND profile_hash = ?", (item_id, prof_hash))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return {"status": "error", "message": "Record nahi mila"}
+    
+    # Password verification
+    check = decrypt_payload(passphrase, row[0], row[1], row[2])
+    if check is None:
+        conn.close()
+        return {"status": "error", "message": "Galat master password!"}
+    
+    # Re-encrypt updated payload
+    c_text, nonce, salt = encrypt_payload(passphrase, details)
+    c.execute('''
+        UPDATE milestones 
+        SET event_tag = ?, ciphertext = ?, nonce = ?, salt = ?
+        WHERE id = ? AND profile_hash = ?
+    ''', (event_tag, c_text, nonce, salt, item_id, prof_hash))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
 def get_profile_milestones(prof_hash: str, passphrase: str):
     init_db()
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute('''
-        SELECT event_tag, ciphertext, nonce, salt, created_at 
+        SELECT id, event_tag, ciphertext, nonce, salt, created_at 
         FROM milestones 
         WHERE profile_hash = ? 
         ORDER BY id DESC
@@ -132,10 +155,11 @@ def get_profile_milestones(prof_hash: str, passphrase: str):
 
     results = []
     for r in rows:
-        tag, c_text, nonce, salt, created_at = r
+        m_id, tag, c_text, nonce, salt, created_at = r
         decrypted = decrypt_payload(passphrase, c_text, nonce, salt)
         if decrypted is not None:
             results.append({
+                "id": m_id,
                 "event_tag": tag,
                 "data": decrypted,
                 "created_at": created_at
@@ -195,7 +219,7 @@ def delete_profile_vault(prof_hash: str, passphrase: str):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     
-    # 1. Pehle Master Password ko decrypt karke verify karein
+    # 1. Master password verify karein
     c.execute("SELECT enc_profile_meta, meta_nonce, meta_salt FROM baby_profiles WHERE profile_hash = ?", (prof_hash,))
     row = c.fetchone()
     if not row:
@@ -205,9 +229,9 @@ def delete_profile_vault(prof_hash: str, passphrase: str):
     meta = decrypt_payload(passphrase, row[0], row[1], row[2])
     if meta is None:
         conn.close()
-        return {"status": "error", "message": "Galat password! Vault delete nahi ho sakta"}
+        return {"status": "error", "message": "Galat master password! Profile delete nahi ho sakti"}
 
-    # 2. Sahi password hone par profile aur uske saare milestones database se wipe karein
+    # 2. Poori Profile aur saare Milestones delete karein
     c.execute("DELETE FROM baby_profiles WHERE profile_hash = ?", (prof_hash,))
     c.execute("DELETE FROM milestones WHERE profile_hash = ?", (prof_hash,))
     conn.commit()
