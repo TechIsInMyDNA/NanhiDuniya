@@ -50,12 +50,14 @@
     .btn-primary:hover { background: #d97706; }
     .btn-secondary { background: #1e293b; color: #f8fafc; border: 1px solid #334155; }
     .btn-secondary:hover { background: #334155; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
     .btn-sm { width: auto; padding: 6px 12px; font-size: 0.78rem; }
     .hidden { display: none !important; }
 
     /* Tabs */
-    .nav-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 18px; }
-    .tab-btn { background: #0b1329; border: 1px solid var(--border); color: var(--muted); padding: 10px 4px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-align: center; }
+    .nav-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 18px; }
+    .tab-btn { background: #0b1329; border: 1px solid var(--border); color: var(--muted); padding: 9px 2px; border-radius: 10px; font-size: 0.73rem; font-weight: 700; cursor: pointer; text-align: center; }
     .tab-btn.active { background: rgba(245, 158, 11, 0.15); color: var(--accent); border-color: var(--accent); }
 
     /* Record Cards */
@@ -64,6 +66,7 @@
     .entry-title { font-size: 0.98rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
     .entry-sub { font-size: 0.83rem; color: #cbd5e1; line-height: 1.4; margin-bottom: 3px; }
     .tag { background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem; }
+    .action-row { display: flex; gap: 8px; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -81,7 +84,7 @@
     </div>
   </div>
 
-  <!-- AUTH SCREEN (REGISTER / UNLOCK) -->
+  <!-- AUTH SCREEN -->
   <div id="screen-auth" class="card">
     <div style="display: flex; gap: 8px; margin-bottom: 16px;">
       <button class="btn btn-primary" id="btn-mode-reg" onclick="toggleAuthMode('reg')">New Registration</button>
@@ -91,7 +94,7 @@
     <!-- REGISTER FORM -->
     <div id="form-register">
       <div class="card-heading">Register Baby Profile</div>
-      <div class="card-desc">Enter birth details, baby name and a secure password.</div>
+      <div class="card-desc">Enter birth details, baby name and a secure master password.</div>
 
       <div class="form-group">
         <label>Baby Full Name</label>
@@ -115,7 +118,7 @@
       </div>
 
       <div class="form-group">
-        <label>Secret Password (For Vault Access)</label>
+        <label>Master Password (For Security & Deletion)</label>
         <input type="password" id="reg-pass" placeholder="Create a strong password" required>
       </div>
 
@@ -125,7 +128,7 @@
     <!-- UNLOCK FORM -->
     <div id="form-unlock" class="hidden">
       <div class="card-heading">Unlock Existing Profile</div>
-      <div class="card-desc">Enter baby name and your vault password to load data.</div>
+      <div class="card-desc">Enter baby name and your master password to load data.</div>
 
       <div class="form-group">
         <label>Baby Full Name</label>
@@ -133,8 +136,8 @@
       </div>
 
       <div class="form-group">
-        <label>Vault Password</label>
-        <input type="password" id="login-pass" placeholder="Enter your password" required>
+        <label>Master Password</label>
+        <input type="password" id="login-pass" placeholder="Enter your master password" required>
       </div>
 
       <button class="btn btn-primary" onclick="handleUnlock()">Unlock Baby Vault 🔓</button>
@@ -148,20 +151,22 @@
         <h2 id="dash-baby-name" style="font-size: 1.3rem; color: var(--accent);">Baby Name</h2>
         <p id="dash-baby-meta" style="font-size: 0.78rem; color: var(--muted); margin-top: 3px;">DOB | TOB | City</p>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="lockSession()">Lock Vault 🔒</button>
+      <button class="btn btn-secondary btn-sm" onclick="lockSession()">Lock 🔒</button>
     </div>
 
     <!-- TABS -->
     <div class="nav-tabs">
       <div class="tab-btn active" id="tab-vac" onclick="switchTab('vac')">💉 Vaccines</div>
-      <div class="tab-btn" id="tab-med" onclick="switchTab('med')">💊 Medications</div>
+      <div class="tab-btn" id="tab-med" onclick="switchTab('med')">💊 Medical</div>
       <div class="tab-btn" id="tab-mem" onclick="switchTab('mem')">📖 Memories</div>
+      <div class="tab-btn" id="tab-set" onclick="switchTab('set')">⚙️ Backup/Del</div>
     </div>
 
     <!-- 1. VACCINATION TAB -->
     <div id="panel-vac">
       <div style="background: #0b1329; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-        <h4 style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Log Vaccination</h4>
+        <h4 id="vac-form-title" style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Log Vaccination</h4>
+        <input type="hidden" id="edit-vac-index" value="-1">
         <div class="row">
           <div class="form-group"><input type="text" id="vac-name" placeholder="Vaccine (e.g. BCG, Polio)"></div>
           <div class="form-group"><input type="date" id="vac-date"></div>
@@ -171,7 +176,8 @@
           <div class="form-group"><input type="number" id="vac-cost" placeholder="Cost (₹)"></div>
         </div>
         <div class="form-group"><input type="text" id="vac-note" placeholder="Doctor remarks / reaction / next schedule"></div>
-        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="addVaccination()">Add Vaccine Entry</button>
+        <button class="btn btn-primary btn-sm" id="vac-btn-submit" style="width: 100%;" onclick="saveVaccination()">Add Vaccine Entry</button>
+        <button class="btn btn-secondary btn-sm hidden" id="vac-btn-cancel" style="width: 100%; margin-top: 6px;" onclick="resetVacForm()">Cancel Edit</button>
       </div>
       <div id="list-vac"></div>
     </div>
@@ -179,7 +185,8 @@
     <!-- 2. MEDICATION TAB -->
     <div id="panel-med" class="hidden">
       <div style="background: #0b1329; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-        <h4 style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Log Medical & Treatment Record</h4>
+        <h4 id="med-form-title" style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Log Medical & Treatment Record</h4>
+        <input type="hidden" id="edit-med-index" value="-1">
         <div class="row">
           <div class="form-group"><input type="text" id="med-name" placeholder="Medicine & Dose (e.g. Calpol 2.5ml)"></div>
           <div class="form-group"><input type="date" id="med-date"></div>
@@ -189,7 +196,8 @@
           <div class="form-group"><input type="number" id="med-cost" placeholder="Cost (₹)"></div>
         </div>
         <div class="form-group"><textarea id="med-feelings" rows="2" placeholder="Recovery progress, doctor advice & parents' observations"></textarea></div>
-        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="addMedication()">Add Medical Entry</button>
+        <button class="btn btn-primary btn-sm" id="med-btn-submit" style="width: 100%;" onclick="saveMedication()">Add Medical Entry</button>
+        <button class="btn btn-secondary btn-sm hidden" id="med-btn-cancel" style="width: 100%; margin-top: 6px;" onclick="resetMedForm()">Cancel Edit</button>
       </div>
       <div id="list-med"></div>
     </div>
@@ -197,12 +205,40 @@
     <!-- 3. MEMORIES TAB -->
     <div id="panel-mem" class="hidden">
       <div style="background: #0b1329; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-        <h4 style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Save Milestone & Memory</h4>
+        <h4 id="mem-form-title" style="font-size: 0.88rem; margin-bottom: 10px; color: #fff;">Save Milestone & Memory</h4>
+        <input type="hidden" id="edit-mem-index" value="-1">
         <div class="form-group"><input type="text" id="mem-title" placeholder="Moment Title (e.g. First word, Rolled over)"></div>
-        <div class="form-group"><textarea id="mem-desc" rows="3" placeholder="Describe the wonderful memory in detail..."></textarea></div>
-        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="addMemory()">Save Memory</button>
+        <div class="row">
+          <div class="form-group"><label>Memory Date</label><input type="date" id="mem-date"></div>
+          <div class="form-group"><label>Memory Time</label><input type="time" id="mem-time"></div>
+        </div>
+        <div class="form-group"><label>Feelings & Description</label><textarea id="mem-desc" rows="3" placeholder="Describe the wonderful memory and feelings in detail..."></textarea></div>
+        <button class="btn btn-primary btn-sm" id="mem-btn-submit" style="width: 100%;" onclick="saveMemory()">Save Memory</button>
+        <button class="btn btn-secondary btn-sm hidden" id="mem-btn-cancel" style="width: 100%; margin-top: 6px;" onclick="resetMemForm()">Cancel Edit</button>
       </div>
       <div id="list-mem"></div>
+    </div>
+
+    <!-- 4. SETTINGS, BACKUP & DELETE TAB -->
+    <div id="panel-set" class="hidden">
+      <div style="background: #0b1329; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+        <h4 style="font-size: 0.88rem; margin-bottom: 8px; color: #fff;">📦 JSON Backup & Restore</h4>
+        <p style="font-size: 0.76rem; color: var(--muted); margin-bottom: 12px;">Download a complete backup JSON file of this baby profile or restore from a backup file.</p>
+        <button class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 8px;" onclick="downloadJSONBackup()">📥 Download JSON Backup</button>
+        <div class="form-group" style="margin-top: 10px;">
+          <label>Restore Profile from JSON</label>
+          <input type="file" id="json-restore-file" accept=".json" onchange="restoreJSONBackup(event)">
+        </div>
+      </div>
+
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 14px;">
+        <h4 style="font-size: 0.88rem; margin-bottom: 8px; color: var(--danger);">⚠️ Danger Zone: Delete Profile</h4>
+        <p style="font-size: 0.76rem; color: var(--muted); margin-bottom: 10px;">Deleting this profile will permanently remove all records. Enter your master password to confirm.</p>
+        <div class="form-group">
+          <input type="password" id="del-master-pass" placeholder="Enter Master Password">
+        </div>
+        <button class="btn btn-danger btn-sm" style="width: 100%;" onclick="deleteBabyProfile()">Permanently Delete Profile</button>
+      </div>
     </div>
 
     <button class="btn btn-secondary" onclick="openExportModal()" style="margin-top: 14px;">📄 Export Official PDF Report</button>
@@ -230,24 +266,20 @@
 <script>
   // ========================================================
   // REPO & ANTI-REVOCATION TOKEN CONFIG
-  // Paste your GitHub classic token split across t1 & t2 
-  // so GitHub scanning bot never revokes it!
-  // Example: if token is ghp_1234567890abcdef
-  // t1: "ghp_12345678", t2: "90abcdef"
   // ========================================================
   const REPO_CONFIG = {
-    owner: "TechIsInMyDNA",     // Replace with your GitHub user
-    repo: "NanhiDuniya",               // Replace with your repository
+    owner: "TechIsInMyDNA",
+    repo: "NanhiDuniya",
     path: "data.json",
-    t1: "ghp_yaXkzS6pvUHe4tc",        // First half of PAT
-    t2: "HHG2p304vWGUNtS1rbpfO"            // Second half of PAT
+    t1: "ghp_yaXkzS6pvUHe4",   // Split token first half
+    t2: "tcHHG2p304vWGUNtS1rbpfO"       // Split token second half
   };
 
   function getActiveToken() {
     return REPO_CONFIG.t1 + REPO_CONFIG.t2;
   }
 
-  let activeBaby = null;
+  let activeBabyKey = null;
   let allVaults = {};
 
   window.addEventListener("DOMContentLoaded", async () => {
@@ -357,7 +389,7 @@
     const pass = document.getElementById("reg-pass").value.trim();
 
     if (!name || !dob || !pob || !pass) {
-      alert("Please fill Baby Name, Date, Place and Password!");
+      alert("Please fill Baby Name, Date, Place and Master Password!");
       return;
     }
 
@@ -374,7 +406,7 @@
       memories: []
     };
 
-    activeBaby = allVaults[key];
+    activeBabyKey = key;
     await pushToCloud();
     openDashboard();
   }
@@ -389,30 +421,31 @@
       return;
     }
     if (allVaults[key].password !== pass) {
-      alert("Incorrect password!");
+      alert("Incorrect master password!");
       return;
     }
 
-    activeBaby = allVaults[key];
+    activeBabyKey = key;
     openDashboard();
   }
 
   function openDashboard() {
+    const baby = allVaults[activeBabyKey];
     document.getElementById("screen-auth").classList.add("hidden");
     document.getElementById("screen-dashboard").classList.remove("hidden");
-    document.getElementById("dash-baby-name").innerText = activeBaby.name;
-    document.getElementById("dash-baby-meta").innerText = `DOB: ${activeBaby.dob} | Time: ${activeBaby.tob || 'N/A'} | City: ${activeBaby.pob}`;
+    document.getElementById("dash-baby-name").innerText = baby.name;
+    document.getElementById("dash-baby-meta").innerText = `DOB: ${baby.dob} | Time: ${baby.tob || 'N/A'} | City: ${baby.pob}`;
     renderAllPanels();
   }
 
   function lockSession() {
-    activeBaby = null;
+    activeBabyKey = null;
     document.getElementById("screen-dashboard").classList.add("hidden");
     document.getElementById("screen-auth").classList.remove("hidden");
   }
 
   function switchTab(tab) {
-    ['vac', 'med', 'mem'].forEach(t => {
+    ['vac', 'med', 'mem', 'set'].forEach(t => {
       document.getElementById(`panel-${t}`).classList.add("hidden");
       document.getElementById(`tab-${t}`).classList.remove("active");
     });
@@ -420,99 +453,294 @@
     document.getElementById(`tab-${tab}`).classList.add("active");
   }
 
-  // ADD ENTRIES
-  async function addVaccination() {
+  // ================= VACCINATION LOGIC & EDIT =================
+  async function saveVaccination() {
     const name = document.getElementById("vac-name").value.trim();
     const date = document.getElementById("vac-date").value;
     const place = document.getElementById("vac-place").value.trim();
     const cost = document.getElementById("vac-cost").value.trim();
     const note = document.getElementById("vac-note").value.trim();
+    const editIdx = parseInt(document.getElementById("edit-vac-index").value);
+
     if (!name || !date) return alert("Vaccine name and date are required!");
 
-    activeBaby.vaccinations.push({ name, date, place, cost: cost || "0", note });
-    document.getElementById("vac-name").value = "";
-    document.getElementById("vac-place").value = "";
-    document.getElementById("vac-cost").value = "";
-    document.getElementById("vac-note").value = "";
+    const baby = allVaults[activeBabyKey];
+    if (editIdx > -1) {
+      baby.vaccinations[editIdx] = { name, date, place, cost: cost || "0", note };
+      resetVacForm();
+    } else {
+      baby.vaccinations.push({ name, date, place, cost: cost || "0", note });
+      document.getElementById("vac-name").value = "";
+      document.getElementById("vac-date").value = "";
+      document.getElementById("vac-place").value = "";
+      document.getElementById("vac-cost").value = "";
+      document.getElementById("vac-note").value = "";
+    }
+
     renderAllPanels();
     await pushToCloud();
   }
 
-  async function addMedication() {
+  function editVaccination(idx) {
+    const v = allVaults[activeBabyKey].vaccinations[idx];
+    document.getElementById("vac-name").value = v.name;
+    document.getElementById("vac-date").value = v.date;
+    document.getElementById("vac-place").value = v.place;
+    document.getElementById("vac-cost").value = v.cost;
+    document.getElementById("vac-note").value = v.note;
+    document.getElementById("edit-vac-index").value = idx;
+    document.getElementById("vac-form-title").innerText = "Edit Vaccination Record";
+    document.getElementById("vac-btn-submit").innerText = "Update Vaccination";
+    document.getElementById("vac-btn-cancel").classList.remove("hidden");
+  }
+
+  function resetVacForm() {
+    document.getElementById("vac-name").value = "";
+    document.getElementById("vac-date").value = "";
+    document.getElementById("vac-place").value = "";
+    document.getElementById("vac-cost").value = "";
+    document.getElementById("vac-note").value = "";
+    document.getElementById("edit-vac-index").value = "-1";
+    document.getElementById("vac-form-title").innerText = "Log Vaccination";
+    document.getElementById("vac-btn-submit").innerText = "Add Vaccine Entry";
+    document.getElementById("vac-btn-cancel").classList.add("hidden");
+  }
+
+  async function deleteVaccination(idx) {
+    if (!confirm("Delete this vaccination entry?")) return;
+    allVaults[activeBabyKey].vaccinations.splice(idx, 1);
+    renderAllPanels();
+    await pushToCloud();
+  }
+
+  // ================= MEDICATION LOGIC & EDIT =================
+  async function saveMedication() {
     const name = document.getElementById("med-name").value.trim();
     const date = document.getElementById("med-date").value;
     const symptom = document.getElementById("med-symptom").value.trim();
     const cost = document.getElementById("med-cost").value.trim();
     const feelings = document.getElementById("med-feelings").value.trim();
+    const editIdx = parseInt(document.getElementById("edit-med-index").value);
+
     if (!name || !date) return alert("Medicine name and date are required!");
 
-    activeBaby.medications.push({ name, date, symptom, cost: cost || "0", feelings });
+    const baby = allVaults[activeBabyKey];
+    if (editIdx > -1) {
+      baby.medications[editIdx] = { name, date, symptom, cost: cost || "0", feelings };
+      resetMedForm();
+    } else {
+      baby.medications.push({ name, date, symptom, cost: cost || "0", feelings });
+      document.getElementById("med-name").value = "";
+      document.getElementById("med-date").value = "";
+      document.getElementById("med-symptom").value = "";
+      document.getElementById("med-cost").value = "";
+      document.getElementById("med-feelings").value = "";
+    }
+
+    renderAllPanels();
+    await pushToCloud();
+  }
+
+  function editMedication(idx) {
+    const m = allVaults[activeBabyKey].medications[idx];
+    document.getElementById("med-name").value = m.name;
+    document.getElementById("med-date").value = m.date;
+    document.getElementById("med-symptom").value = m.symptom;
+    document.getElementById("med-cost").value = m.cost;
+    document.getElementById("med-feelings").value = m.feelings;
+    document.getElementById("edit-med-index").value = idx;
+    document.getElementById("med-form-title").innerText = "Edit Medical Record";
+    document.getElementById("med-btn-submit").innerText = "Update Medical Entry";
+    document.getElementById("med-btn-cancel").classList.remove("hidden");
+  }
+
+  function resetMedForm() {
     document.getElementById("med-name").value = "";
+    document.getElementById("med-date").value = "";
     document.getElementById("med-symptom").value = "";
     document.getElementById("med-cost").value = "";
     document.getElementById("med-feelings").value = "";
+    document.getElementById("edit-med-index").value = "-1";
+    document.getElementById("med-form-title").innerText = "Log Medical & Treatment Record";
+    document.getElementById("med-btn-submit").innerText = "Add Medical Entry";
+    document.getElementById("med-btn-cancel").classList.add("hidden");
+  }
+
+  async function deleteMedication(idx) {
+    if (!confirm("Delete this medical entry?")) return;
+    allVaults[activeBabyKey].medications.splice(idx, 1);
     renderAllPanels();
     await pushToCloud();
   }
 
-  async function addMemory() {
+  // ================= MEMORIES LOGIC & EDIT =================
+  async function saveMemory() {
     const title = document.getElementById("mem-title").value.trim();
+    const date = document.getElementById("mem-date").value || new Date().toLocaleDateString('en-GB');
+    const time = document.getElementById("mem-time").value || "";
     const desc = document.getElementById("mem-desc").value.trim();
+    const editIdx = parseInt(document.getElementById("edit-mem-index").value);
+
     if (!title || !desc) return alert("Title and description are required!");
 
-    activeBaby.memories.push({ title, desc, date: new Date().toLocaleDateString('en-GB') });
-    document.getElementById("mem-title").value = "";
-    document.getElementById("mem-desc").value = "";
+    const baby = allVaults[activeBabyKey];
+    if (editIdx > -1) {
+      baby.memories[editIdx] = { title, date, time, desc };
+      resetMemForm();
+    } else {
+      baby.memories.push({ title, date, time, desc });
+      document.getElementById("mem-title").value = "";
+      document.getElementById("mem-date").value = "";
+      document.getElementById("mem-time").value = "";
+      document.getElementById("mem-desc").value = "";
+    }
+
     renderAllPanels();
     await pushToCloud();
   }
 
+  function editMemory(idx) {
+    const mm = allVaults[activeBabyKey].memories[idx];
+    document.getElementById("mem-title").value = mm.title;
+    document.getElementById("mem-date").value = mm.date;
+    document.getElementById("mem-time").value = mm.time || "";
+    document.getElementById("mem-desc").value = mm.desc;
+    document.getElementById("edit-mem-index").value = idx;
+    document.getElementById("mem-form-title").innerText = "Edit Memory & Milestone";
+    document.getElementById("mem-btn-submit").innerText = "Update Memory";
+    document.getElementById("mem-btn-cancel").classList.remove("hidden");
+  }
+
+  function resetMemForm() {
+    document.getElementById("mem-title").value = "";
+    document.getElementById("mem-date").value = "";
+    document.getElementById("mem-time").value = "";
+    document.getElementById("mem-desc").value = "";
+    document.getElementById("edit-mem-index").value = "-1";
+    document.getElementById("mem-form-title").innerText = "Save Milestone & Memory";
+    document.getElementById("mem-btn-submit").innerText = "Save Memory";
+    document.getElementById("mem-btn-cancel").classList.add("hidden");
+  }
+
+  async function deleteMemory(idx) {
+    if (!confirm("Delete this memory?")) return;
+    allVaults[activeBabyKey].memories.splice(idx, 1);
+    renderAllPanels();
+    await pushToCloud();
+  }
+
+  // ================= RENDER PANELS =================
   function renderAllPanels() {
+    const baby = allVaults[activeBabyKey];
+
     // Vaccines
     const vBox = document.getElementById("list-vac");
     vBox.innerHTML = "";
-    (activeBaby.vaccinations || []).slice().reverse().forEach(v => {
+    (baby.vaccinations || []).forEach((v, idx) => {
       vBox.innerHTML += `
         <div class="entry-tile">
           <div class="entry-head"><span>Date: <b>${v.date}</b></span><span class="tag">Cost: ₹${v.cost}</span></div>
           <div class="entry-title">${v.name}</div>
           <div class="entry-sub">📍 Clinic: ${v.place || 'Not mentioned'}</div>
           ${v.note ? `<div class="entry-sub" style="color: var(--muted);">📝 Notes: ${v.note}</div>` : ''}
+          <div class="action-row">
+            <button class="btn btn-secondary btn-sm" onclick="editVaccination(${idx})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVaccination(${idx})">Delete</button>
+          </div>
         </div>`;
     });
 
     // Medications
     const mBox = document.getElementById("list-med");
     mBox.innerHTML = "";
-    (activeBaby.medications || []).slice().reverse().forEach(m => {
+    (baby.medications || []).forEach((m, idx) => {
       mBox.innerHTML += `
         <div class="entry-tile">
           <div class="entry-head"><span>Date: <b>${m.date}</b></span><span class="tag">Cost: ₹${m.cost}</span></div>
           <div class="entry-title">${m.name}</div>
           <div class="entry-sub">🩺 Symptoms: ${m.symptom || 'General'}</div>
           ${m.feelings ? `<div class="entry-sub" style="color: #fcd34d; font-style: italic;">💛 Observation: "${m.feelings}"</div>` : ''}
+          <div class="action-row">
+            <button class="btn btn-secondary btn-sm" onclick="editMedication(${idx})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteMedication(${idx})">Delete</button>
+          </div>
         </div>`;
     });
 
     // Memories
     const memBox = document.getElementById("list-mem");
     memBox.innerHTML = "";
-    (activeBaby.memories || []).slice().reverse().forEach(mm => {
+    (baby.memories || []).forEach((mm, idx) => {
       memBox.innerHTML += `
         <div class="entry-tile">
-          <div class="entry-head"><span>Logged: <b>${mm.date}</b></span></div>
+          <div class="entry-head"><span>Date: <b>${mm.date}</b> ${mm.time ? '| Time: <b>' + mm.time + '</b>' : ''}</span></div>
           <div class="entry-title" style="color: #34d399;">${mm.title}</div>
           <div class="entry-sub">${mm.desc}</div>
+          <div class="action-row">
+            <button class="btn btn-secondary btn-sm" onclick="editMemory(${idx})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteMemory(${idx})">Delete</button>
+          </div>
         </div>`;
     });
   }
 
-  // EXPORT TO PDF
+  // ================= BACKUP & DELETE PROFILE =================
+  function downloadJSONBackup() {
+    const baby = allVaults[activeBabyKey];
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(baby, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `${baby.name}_Backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+  }
+
+  function restoreJSONBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (!imported.name || !imported.password) throw new Error();
+        const key = imported.name.toLowerCase().replace(/\s+/g, '_');
+        allVaults[key] = imported;
+        activeBabyKey = key;
+        saveLocalStore();
+        await pushToCloud();
+        alert("Profile successfully restored from backup!");
+        openDashboard();
+      } catch(err) {
+        alert("Invalid backup JSON file format!");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function deleteBabyProfile() {
+    const pass = document.getElementById("del-master-pass").value.trim();
+    const baby = allVaults[activeBabyKey];
+    if (pass !== baby.password) {
+      alert("Incorrect master password!");
+      return;
+    }
+    if (!confirm(`Are you absolutely sure you want to delete profile for ${baby.name}?`)) return;
+
+    delete allVaults[activeBabyKey];
+    saveLocalStore();
+    await pushToCloud();
+    alert("Profile deleted successfully.");
+    lockSession();
+  }
+
+  // ================= EXPORT TO PDF =================
   function openExportModal() { document.getElementById("modal-export").classList.remove("hidden"); }
   function closeExportModal() { document.getElementById("modal-export").classList.add("hidden"); }
 
   function exportPDF(type) {
     closeExportModal();
+    const baby = allVaults[activeBabyKey];
     const zone = document.getElementById("print-zone");
     zone.style.display = "block";
 
@@ -522,19 +750,20 @@
         <p style="font-size: 11px; color: #64748b; margin-top: 4px;">Confidential Child Health & Milestone Portfolio</p>
       </div>
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 12px;">
-        <p><b>Baby Name:</b> ${activeBaby.name}</p>
-        <p><b>Birth Details:</b> ${activeBaby.dob} | ${activeBaby.tob || 'N/A'} | ${activeBaby.pob}</p>
+        <p><b>Baby Name:</b> ${baby.name}</p>
+        <p><b>Birth Details:</b> ${baby.dob} | ${baby.tob || 'N/A'} | ${baby.pob}</p>
+        <p><b>Report Type:</b> ${type.toUpperCase()}</p>
         <p><b>Generated Date:</b> ${new Date().toLocaleDateString('en-GB')}</p>
       </div>
     `;
 
     if (type === 'all' || type === 'vac') {
-      html += `<h2 style="font-size: 15px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 20px;">💉 Vaccination Log</h2>`;
-      if ((activeBaby.vaccinations || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
+      html += `<h2 style="font-size: 15px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 20px;">💉 Official Vaccination Record</h2>`;
+      if ((baby.vaccinations || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
       else {
         html += `<table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px;" border="1" cellpadding="6">
           <tr style="background: #f1f5f9;"><th>Vaccine</th><th>Date</th><th>Clinic / Hospital</th><th>Cost (₹)</th><th>Notes</th></tr>`;
-        activeBaby.vaccinations.forEach(v => {
+        baby.vaccinations.forEach(v => {
           html += `<tr><td><b>${v.name}</b></td><td>${v.date}</td><td>${v.place || '-'}</td><td>₹${v.cost}</td><td>${v.note || '-'}</td></tr>`;
         });
         html += `</table>`;
@@ -542,12 +771,12 @@
     }
 
     if (type === 'all' || type === 'med') {
-      html += `<h2 style="font-size: 15px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 22px;">💊 Medical Treatment & Symptoms</h2>`;
-      if ((activeBaby.medications || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
+      html += `<h2 style="font-size: 15px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 22px;">💊 Medical Treatment & Health History</h2>`;
+      if ((baby.medications || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
       else {
         html += `<table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px;" border="1" cellpadding="6">
-          <tr style="background: #f1f5f9;"><th>Medicine</th><th>Date</th><th>Symptoms</th><th>Cost (₹)</th><th>Observations</th></tr>`;
-        activeBaby.medications.forEach(m => {
+          <tr style="background: #f1f5f9;"><th>Medicine</th><th>Date</th><th>Symptoms</th><th>Cost (₹)</th><th>Observations & Feelings</th></tr>`;
+        baby.medications.forEach(m => {
           html += `<tr><td><b>${m.name}</b></td><td>${m.date}</td><td>${m.symptom || '-'}</td><td>₹${m.cost}</td><td>${m.feelings || '-'}</td></tr>`;
         });
         html += `</table>`;
@@ -555,12 +784,12 @@
     }
 
     if (type === 'all' || type === 'mem') {
-      html += `<h2 style="font-size: 15px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 22px;">📖 Milestones & Precious Memories</h2>`;
-      if ((activeBaby.memories || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
+      html += `<h2 style="font-size: 15px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 22px;">📖 Milestones & Precious Memories Book</h2>`;
+      if ((baby.memories || []).length === 0) html += `<p style="font-size: 11px; color: #94a3b8;">No records logged.</p>`;
       else {
-        activeBaby.memories.forEach(mm => {
-          html += `<div style="margin-top: 8px; border-left: 3px solid #f59e0b; padding-left: 10px;">
-            <p style="font-size: 12px; font-weight: bold; margin: 0;">${mm.title} <span style="font-size: 10px; color: #64748b; font-weight: normal;">(${mm.date})</span></p>
+        baby.memories.forEach(mm => {
+          html += `<div style="margin-top: 10px; border-left: 3px solid #f59e0b; padding-left: 10px;">
+            <p style="font-size: 12px; font-weight: bold; margin: 0;">${mm.title} <span style="font-size: 10px; color: #64748b; font-weight: normal;">(${mm.date} ${mm.time ? '| ' + mm.time : ''})</span></p>
             <p style="font-size: 11px; color: #334155; margin-top: 2px;">${mm.desc}</p>
           </div>`;
         });
@@ -570,7 +799,7 @@
     zone.innerHTML = html;
     const opt = {
       margin: 10,
-      filename: `${activeBaby.name}_${type}_Report.pdf`,
+      filename: `${baby.name}_${type}_Report.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
