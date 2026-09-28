@@ -5,7 +5,15 @@
     "tob": "11:05",
     "pob": "Gondia",
     "password": "Shubham@144",
-    "vaccinations": [],
+    "vaccinations": [
+      {
+        "name": "Infarix",
+        "date": "2026-09-29",
+        "place": "",
+        "cost": "0",
+        "note": ""
+      }
+    ],
     "medications": [],
     "memories": []
   }
