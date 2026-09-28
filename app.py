@@ -9,6 +9,7 @@ from TV import (
     register_or_login_profile,
     add_profile_milestone,
     get_profile_milestones,
+    edit_profile_milestone,
     export_single_profile_backup,
     import_single_profile_backup,
     delete_profile_vault
@@ -92,7 +93,7 @@ HTML_PAGE = """<!DOCTYPE html>
           </h1>
           <div class="flex items-center gap-2 mt-0.5">
             <p class="text-[10px] md:text-xs text-stone-500 font-medium hidden sm:block">Vedic Janmapatri • Scriptural Naming • Digital Health & Memory Vault</p>
-            <span id="syncStatusBadge" class="text-[9px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-bold">● Offline Ready</span>
+            <span id="syncStatusBadge" class="text-[9px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-bold">● Connecting...</span>
           </div>
         </div>
       </div>
@@ -116,7 +117,7 @@ HTML_PAGE = """<!DOCTYPE html>
       <div class="flex items-center gap-3">
         <div class="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></div>
         <div>
-          <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">Active Zero-Knowledge Cloud Vault:</span>
+          <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">Live Cloud Vault Active:</span>
           <strong id="activeBabyNameDisplay" class="text-emerald-950 text-base md:text-lg font-black block"></strong>
         </div>
       </div>
@@ -208,7 +209,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
       </div>
 
-      <!-- RIGHT COLUMN: Naming & Lifetime Vault (Milestones + Vaccination) -->
+      <!-- RIGHT COLUMN: Naming & Vault -->
       <div class="lg:col-span-7 space-y-6">
 
         <!-- STEP 2: Naming Engine -->
@@ -253,7 +254,7 @@ HTML_PAGE = """<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- STEP 3: Setup Profile & Password Section -->
+        <!-- STEP 3: Setup Profile -->
         <div id="profileSetupSection" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-sm space-y-4 border-2 border-amber-300">
           <div class="flex justify-between items-center">
             <div>
@@ -275,7 +276,7 @@ HTML_PAGE = """<!DOCTYPE html>
           <div class="space-y-2 text-xs">
             <label class="block font-bold text-stone-700">Create a Secret Master Password (Family Key):</label>
             <input type="password" id="masterPasswordInput" placeholder="Keep this password safe with your family" class="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500 outline-none font-medium">
-            <p class="text-[10px] text-stone-500">✦ Neither other parents nor cloud admins can ever view your baby's memories & health records without this key.</p>
+            <p class="text-[10px] text-stone-500">✦ This password secures both Janmapatri and lifetime memories directly on the cloud.</p>
             
             <button onclick="createBabyProfileVault()" class="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl mt-2 active:scale-95 transition shadow-sm">
               Lock Profile & Open Milestone Vault ➔
@@ -302,7 +303,7 @@ HTML_PAGE = """<!DOCTYPE html>
             <div><span class="text-[10px] text-stone-500 block">Syllable</span><strong id="vAksharText" class="text-amber-900 text-sm font-black">-</strong></div>
           </div>
 
-          <!-- DUAL ENTRY: Switch between General Memory & Vaccination Record -->
+          <!-- DUAL ENTRY -->
           <div class="p-4 bg-gradient-to-b from-stone-50 to-white rounded-2xl border border-stone-200 text-xs space-y-3 shadow-xs">
             <div class="flex justify-between items-center">
               <span class="font-bold text-stone-800 flex items-center gap-1.5">
@@ -314,7 +315,7 @@ HTML_PAGE = """<!DOCTYPE html>
               </div>
             </div>
 
-            <!-- TAB 1: General Memory / Milestone Form -->
+            <!-- TAB 1: Memory -->
             <div id="formMemorySection" class="space-y-3">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <select id="milestoneType" onchange="toggleCustomQuestion()" class="p-2.5 rounded-xl border border-stone-300 bg-white font-semibold">
@@ -347,7 +348,7 @@ HTML_PAGE = """<!DOCTYPE html>
               </button>
             </div>
 
-            <!-- TAB 2: Vaccination Schedule & Experience Form -->
+            <!-- TAB 2: Vaccination -->
             <div id="formVaccineSection" class="hidden space-y-3">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
@@ -393,15 +394,15 @@ HTML_PAGE = """<!DOCTYPE html>
 
           <!-- Actions Bar -->
           <div class="pt-1 flex justify-between items-center">
-            <button type="button" onclick="triggerSyncAndReload()" class="text-xs text-amber-800 font-bold underline">
-              Sync / Refresh Feed ↻
+            <button type="button" onclick="triggerSyncAndReload(true)" class="text-xs text-amber-800 font-bold underline">
+              Cloud Sync / Refresh Feed ↻
             </button>
             <button type="button" onclick="downloadAlbumPDF()" class="text-xs bg-amber-900 hover:bg-amber-950 text-white px-4 py-2 rounded-xl font-bold shadow-xs active:scale-95 transition flex items-center gap-1.5">
               <span>📖</span> Export Royal Album PDF
             </button>
           </div>
 
-          <!-- Combined Feed of Milestones & Vaccinations -->
+          <!-- Feed of Milestones & Vaccinations with Edit Options -->
           <div id="albumView" class="space-y-3"></div>
 
           <!-- Utility & Danger Zone -->
@@ -419,18 +420,18 @@ HTML_PAGE = """<!DOCTYPE html>
             <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-rose-950 space-y-2">
               <div class="flex justify-between items-center">
                 <span class="font-bold flex items-center gap-1.5 text-[11px] text-rose-900">
-                  <span>⚠️</span> Danger Zone: Delete Profile & Vault
+                  <span>⚠️</span> Danger Zone: Complete Profile & Janmapatri Wipe
                 </span>
                 <button onclick="toggleDeletePrompt()" class="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-900 px-2.5 py-1 rounded-lg font-bold transition">
                   Toggle Options
                 </button>
               </div>
               <div id="deleteVaultDiv" class="hidden pt-2 border-t border-rose-200 space-y-2">
-                <p class="text-[10px] text-rose-800 leading-relaxed">This action will permanently wipe this baby's Janmapatri, health records, and all encrypted memories. Enter Master Password to confirm:</p>
+                <p class="text-[10px] text-rose-800 leading-relaxed">This action permanently wipes the baby's entire profile, Lagna Kundli, health records, and memories from the server and this device. Enter Master Password to proceed:</p>
                 <div class="flex gap-2">
                   <input type="password" id="deleteConfirmPassword" placeholder="Enter Master Password" class="flex-1 p-2 bg-white rounded-lg border border-rose-300 outline-none">
                   <button onclick="confirmDeleteVault()" class="px-3.5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-lg font-bold text-xs active:scale-95 transition">
-                    Delete Permanently
+                    Wipe Completely
                   </button>
                 </div>
               </div>
@@ -454,7 +455,7 @@ HTML_PAGE = """<!DOCTYPE html>
         </h3>
         <button onclick="toggleVaultModal()" class="text-stone-400 hover:text-stone-700 font-black text-sm">✕</button>
       </div>
-      <p class="text-xs text-stone-500 leading-relaxed">Enter your baby's exact name and family master password to unlock and sync all encrypted memories & health logs:</p>
+      <p class="text-xs text-stone-500 leading-relaxed">Enter your baby's exact name and family master password to unlock and sync all encrypted records from cloud:</p>
 
       <div class="space-y-3 text-xs">
         <div>
@@ -475,7 +476,6 @@ HTML_PAGE = """<!DOCTYPE html>
   <!-- ROYAL CLEAN ALBUM PRINT CANVAS -->
   <div style="position: absolute; left: -9999px; top: 0;">
     <div id="pdfPrintCanvas">
-      
       <div style="text-align: center; border-bottom: 2px solid #92400E; padding-bottom: 12px; margin-bottom: 18px;">
         <span style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #92400E; font-weight: bold;">Official Vedic Janmapatri, Health & Lifetime Journal</span>
         <h1 style="font-family: 'Rozha One', serif; font-size: 28px; color: #78350F; margin: 4px 0 0 0;">🌸 Nanhi Duniya</h1>
@@ -517,7 +517,6 @@ HTML_PAGE = """<!DOCTYPE html>
         <div id="pdfChartClone" style="display: inline-block;"></div>
       </div>
 
-      <!-- Combined Milestones & Health Record in PDF -->
       <div style="border-top: 2px dashed #B45309; padding-top: 18px;">
         <div style="text-align: center; margin-bottom: 12px;">
           <h3 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0;">📖 Lifetime Milestones, Memories & Immunization Journal</h3>
@@ -577,22 +576,23 @@ HTML_PAGE = """<!DOCTYPE html>
       });
     }
 
-    window.addEventListener('online', () => {
-      document.getElementById('syncStatusBadge').innerText = "● Cloud Connected";
-      document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
-      flushOfflineQueueToServer();
-    });
+    function updateNetworkStatus() {
+      const badge = document.getElementById('syncStatusBadge');
+      if (navigator.onLine) {
+        badge.innerText = "● Cloud Connected (Live)";
+        badge.className = "text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
+        flushOfflineQueueToServer();
+      } else {
+        badge.innerText = "● Offline Mode (Local Queue)";
+        badge.className = "text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold";
+      }
+    }
 
-    window.addEventListener('offline', () => {
-      document.getElementById('syncStatusBadge').innerText = "● Offline Mode (Queued)";
-      document.getElementById('syncStatusBadge').className = "text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold";
-    });
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
 
     window.addEventListener('DOMContentLoaded', () => {
-      if (navigator.onLine) {
-        document.getElementById('syncStatusBadge').innerText = "● Cloud Connected";
-        document.getElementById('syncStatusBadge').className = "text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
-      }
+      updateNetworkStatus();
       if (activeSession.profileHash && activeSession.passphrase) {
         showVaultDashboard();
       }
@@ -621,11 +621,12 @@ HTML_PAGE = """<!DOCTYPE html>
       }
     }
 
+    // COMPLETE WIPE FUNCTION (Server + LocalStorage + Session)
     async function confirmDeleteVault() {
       const pwd = document.getElementById('deleteConfirmPassword').value.trim();
       if (!pwd) return alert("Please enter master password to proceed");
 
-      if (!confirm("Are you sure you want to permanently delete this baby vault and all records? This cannot be undone!")) {
+      if (!confirm("⚠️ This will permanently delete this baby's entire profile, Kundli, and all memories from the cloud and this device. Continue?")) {
         return;
       }
 
@@ -640,8 +641,12 @@ HTML_PAGE = """<!DOCTYPE html>
         });
         const data = await res.json();
         if (data.status === 'ok') {
-          alert("Vault permanently deleted from server.");
-          logoutVault();
+          // Clear all client cache completely
+          localStorage.clear();
+          sessionStorage.clear();
+          activeSession = { profileHash: '', babyName: '', passphrase: '', meta: {} };
+          alert("🗑️ Entire profile, Janmapatri and records permanently wiped!");
+          window.location.reload();
         } else {
           alert("Error: " + data.message);
         }
@@ -905,7 +910,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
       document.getElementById('vaultDashboard').classList.remove('hidden');
       document.getElementById('mEventDate').value = new Date().toISOString().split('T')[0];
-      triggerSyncAndReload();
+      triggerSyncAndReload(true);
       document.getElementById('vaultDashboard').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -920,7 +925,6 @@ HTML_PAGE = """<!DOCTYPE html>
       }
     }
 
-    // SAVE GENERAL MEMORY
     async function saveNewMilestone() {
       if (!activeSession.profileHash || !activeSession.passphrase) return alert("Please login to vault first");
 
@@ -952,12 +956,11 @@ HTML_PAGE = """<!DOCTYPE html>
         }
       };
 
-      await dispatchVaultSave(payload, "Memory saved to vault!");
+      await dispatchVaultSave(payload, "Memory saved to cloud vault!");
       document.getElementById('mNotes').value = "";
       if (type === 'CUSTOM') document.getElementById('mCustomQuestion').value = "";
     }
 
-    // SAVE VACCINATION WITH EXPERIENCE & CLINIC DETAILS
     async function saveVaccinationRecord() {
       if (!activeSession.profileHash || !activeSession.passphrase) return alert("Please login to vault first");
 
@@ -987,7 +990,7 @@ HTML_PAGE = """<!DOCTYPE html>
         }
       };
 
-      await dispatchVaultSave(payload, "Vaccination record & memory saved to vault!");
+      await dispatchVaultSave(payload, "Vaccination record saved to cloud vault!");
       document.getElementById('vName').value = "";
       document.getElementById('vClinic').value = "";
       document.getElementById('vExperience').value = "";
@@ -1003,13 +1006,18 @@ HTML_PAGE = """<!DOCTYPE html>
         renderLocalEntry(payload);
       } else {
         try {
-          await fetch('/api/milestones/add', {
+          const res = await fetch('/api/milestones/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          alert(`🎉 ${successMsg}`);
-          triggerSyncAndReload();
+          const data = await res.json();
+          if (data.status === "ok") {
+            alert(`🎉 ${successMsg}`);
+            triggerSyncAndReload(true);
+          } else {
+            throw new Error("Save error");
+          }
         } catch (e) {
           const q = getOfflineQueue();
           q.push(payload);
@@ -1051,64 +1059,127 @@ HTML_PAGE = """<!DOCTYPE html>
         }
       }
       setOfflineQueue([]);
-      triggerSyncAndReload();
     }
 
-    async function triggerSyncAndReload() {
+    // CLOUD-FIRST RELOAD
+    async function triggerSyncAndReload(forceCloud = false) {
       if (!activeSession.profileHash || !activeSession.passphrase) return;
 
-      await flushOfflineQueueToServer();
+      if (navigator.onLine) {
+        await flushOfflineQueueToServer();
+      }
 
       try {
-        const res = await fetch(`/api/milestones/get?prof_hash=${encodeURIComponent(activeSession.profileHash)}&pass=${encodeURIComponent(activeSession.passphrase)}`);
+        const res = await fetch(`/api/milestones/get?prof_hash=${encodeURIComponent(activeSession.profileHash)}&pass=${encodeURIComponent(activeSession.passphrase)}&t=${Date.now()}`);
         const list = await res.json();
         currentSavedMilestones = list;
-        const container = document.getElementById('albumView');
-        container.innerHTML = "";
-
-        if (list.length === 0) {
-          container.innerHTML = `
-            <div class="p-6 text-center border-2 border-dashed border-stone-200 rounded-2xl bg-white/50">
-              <span class="text-2xl block mb-1">🕊️</span>
-              <p class="text-xs text-stone-500 font-medium">No memories or vaccination records saved yet. Record your first moment above!</p>
-            </div>`;
-          return;
-        }
-
-        list.forEach(item => {
-          const d = item.data;
-          const isVaccine = d.category === "VACCINE" || item.event_tag.includes("Vaccine");
-
-          if (isVaccine) {
-            container.innerHTML += `
-              <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-200 text-xs space-y-2 shadow-xs hover:border-blue-400 transition">
-                <div class="flex justify-between items-center">
-                  <span class="font-extrabold text-blue-950 text-sm flex items-center gap-1.5">
-                    <span>💉</span> ${d.vaccineName || item.event_tag}
-                  </span>
-                  <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded-full">Date: ${d.dateGiven || d.eventDate}</span>
-                </div>
-                <div class="flex justify-between text-[11px] text-stone-600 bg-white/70 p-2 rounded-xl border border-blue-100">
-                  <span><strong>Place/Doctor:</strong> ${d.clinic || 'Clinic'}</span>
-                  ${d.nextDue ? `<span class="text-rose-700 font-bold">Next Due: ${d.nextDue}</span>` : ''}
-                </div>
-                ${d.experience ? `<p class="text-stone-700 leading-relaxed text-[12px] bg-white p-2.5 rounded-xl border border-stone-200"><strong>Baby's Reaction & Memory:</strong> ${d.experience}</p>` : ''}
-              </div>`;
-          } else {
-            container.innerHTML += `
-              <div class="p-4 bg-white rounded-2xl border border-stone-200/90 text-xs space-y-2 shadow-xs hover:border-amber-200 transition">
-                <div class="flex justify-between items-center">
-                  <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1.5">
-                    <span class="text-amber-700">✦</span> ${item.event_tag}
-                  </span>
-                  <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2.5 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
-                </div>
-                <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-3 rounded-xl border border-stone-100">${d.notes || ''}</p>
-              </div>`;
-          }
-        });
+        renderFeedList(list);
       } catch (err) {
         console.warn("Could not fetch remote milestones:", err);
+      }
+    }
+
+    function renderFeedList(list) {
+      const container = document.getElementById('albumView');
+      container.innerHTML = "";
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center border-2 border-dashed border-stone-200 rounded-2xl bg-white/50">
+            <span class="text-2xl block mb-1">🕊️</span>
+            <p class="text-xs text-stone-500 font-medium">No memories or vaccination records saved yet. Record your first moment above!</p>
+          </div>`;
+        return;
+      }
+
+      list.forEach(item => {
+        const d = item.data;
+        const isVaccine = d.category === "VACCINE" || item.event_tag.includes("Vaccine");
+
+        if (isVaccine) {
+          container.innerHTML += `
+            <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-200 text-xs space-y-2 shadow-xs hover:border-blue-400 transition">
+              <div class="flex justify-between items-center">
+                <span class="font-extrabold text-blue-950 text-sm flex items-center gap-1.5">
+                  <span>💉</span> ${d.vaccineName || item.event_tag}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">Date: ${d.dateGiven || d.eventDate}</span>
+                  <button onclick="editEntryPrompt(${item.id})" class="text-[10px] bg-white border border-blue-300 text-blue-900 px-2 py-0.5 rounded-lg font-bold hover:bg-blue-50 transition">✏️ Edit</button>
+                </div>
+              </div>
+              <div class="flex justify-between text-[11px] text-stone-600 bg-white/70 p-2 rounded-xl border border-blue-100">
+                <span><strong>Place/Doctor:</strong> ${d.clinic || 'Clinic'}</span>
+                ${d.nextDue ? `<span class="text-rose-700 font-bold">Next Due: ${d.nextDue}</span>` : ''}
+              </div>
+              ${d.experience ? `<p class="text-stone-700 leading-relaxed text-[12px] bg-white p-2.5 rounded-xl border border-stone-200"><strong>Baby's Reaction & Memory:</strong> ${d.experience}</p>` : ''}
+            </div>`;
+        } else {
+          container.innerHTML += `
+            <div class="p-4 bg-white rounded-2xl border border-stone-200/90 text-xs space-y-2 shadow-xs hover:border-amber-200 transition">
+              <div class="flex justify-between items-center">
+                <span class="font-extrabold text-amber-950 text-sm flex items-center gap-1.5">
+                  <span class="text-amber-700">✦</span> ${item.event_tag}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] bg-stone-100 text-stone-500 font-semibold px-2 py-0.5 rounded-full">${d.eventDate || d.savedAt || ''}</span>
+                  <button onclick="editEntryPrompt(${item.id})" class="text-[10px] bg-stone-50 border border-stone-300 text-stone-700 px-2 py-0.5 rounded-lg font-bold hover:bg-stone-100 transition">✏️ Edit</button>
+                </div>
+              </div>
+              <p class="text-stone-700 whitespace-pre-wrap leading-relaxed text-[12px] bg-stone-50/60 p-3 rounded-xl border border-stone-100">${d.notes || ''}</p>
+            </div>`;
+        }
+      });
+    }
+
+    // EDIT RECORD WITH MASTER PASSWORD
+    async function editEntryPrompt(id) {
+      const item = currentSavedMilestones.find(x => x.id === id);
+      if (!item) return;
+
+      const d = item.data;
+      const isVaccine = d.category === "VACCINE" || item.event_tag.includes("Vaccine");
+
+      const pwd = prompt("Enter Master Password to authorize edit:");
+      if (!pwd) return;
+
+      if (isVaccine) {
+        const newExp = prompt("Update Baby's Reaction & Memory:", d.experience || "");
+        if (newExp === null) return;
+        const newClinic = prompt("Update Clinic / Doctor Name:", d.clinic || "");
+        if (newClinic === null) return;
+        const newDue = prompt("Update Next Due Date (YYYY-MM-DD):", d.nextDue || "");
+        if (newDue === null) return;
+
+        d.experience = newExp;
+        d.clinic = newClinic;
+        d.nextDue = newDue;
+      } else {
+        const newNotes = prompt("Update Memory Details / Story:", d.notes || "");
+        if (newNotes === null) return;
+        d.notes = newNotes;
+      }
+
+      try {
+        const res = await fetch('/api/milestones/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profile_hash: activeSession.profileHash,
+            passphrase: pwd,
+            id: id,
+            details: d
+          })
+        });
+        const resp = await res.json();
+        if (resp.status === "ok") {
+          alert("🎉 Record updated and re-encrypted successfully!");
+          triggerSyncAndReload(true);
+        } else {
+          alert("Unauthorized: " + resp.message);
+        }
+      } catch (err) {
+        alert("Failed to update: " + err.message);
       }
     }
 
@@ -1217,7 +1288,7 @@ HTML_PAGE = """<!DOCTYPE html>
           });
           const result = await res.json();
           alert(`🎉 Backup restored successfully! (${result.imported} records synced)`);
-          triggerSyncAndReload();
+          triggerSyncAndReload(true);
         } catch (err) {
           alert("Invalid backup file: " + err.message);
         }
@@ -1324,6 +1395,18 @@ class SimpleServer(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({"status": "ok"}).encode('utf-8'))
+
+        elif self.path == "/api/milestones/edit":
+            res = edit_profile_milestone(
+                payload['profile_hash'],
+                payload['passphrase'],
+                payload['id'],
+                payload['details']
+            )
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode('utf-8'))
 
         elif self.path == "/api/backup/import":
             count = import_single_profile_backup(payload)
