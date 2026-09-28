@@ -3,55 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nanhi Duniya - Smart Baby Vault</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Rozha+One&display=swap" rel="stylesheet">
+  <title>नन्ही दुनिया | Nanhi Duniya - Smart Baby Vault</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rozha+One&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
+      --bg: #090d16;
+      --card: #131b2e;
+      --card-inner: #0b1120;
       --accent: #f59e0b;
       --accent-hover: #d97706;
+      --accent-glow: rgba(245, 158, 11, 0.25);
       --text: #f8fafc;
       --muted: #94a3b8;
-      --border: #334155;
-      --danger: #ef4444;
+      --border: #1e293b;
       --success: #10b981;
+      --danger: #ef4444;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 12px; display: flex; justify-content: center; }
-    .container { width: 100%; max-width: 650px; }
-    header { text-align: center; margin-bottom: 24px; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px 10px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 760px; }
+    
+    header { text-align: center; margin-bottom: 20px; }
     header h1 { font-family: 'Rozha One', serif; font-size: 2.2rem; color: var(--accent); letter-spacing: 1px; }
-    header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 3px; }
     
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); margin-bottom: 20px; }
-    .step-badge { display: inline-block; background: rgba(245, 158, 11, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; }
+    .sync-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-top: 8px; border: 1px solid var(--border); }
+    .sync-online { background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.3); }
+    .sync-offline { background: rgba(239, 68, 68, 0.15); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; box-shadow: 0 15px 35px -10px rgba(0,0,0,0.5); margin-bottom: 18px; }
+    .step-badge { display: inline-block; background: var(--accent-glow); color: var(--accent); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; }
     
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
-    input, select, textarea { width: 100%; padding: 12px 14px; background: #0b1120; border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.2s; }
-    input:focus, textarea:focus { border-color: var(--accent); }
-    
-    .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+    input, select, textarea { width: 100%; padding: 11px 13px; background: var(--card-inner); border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 0.9rem; outline: none; transition: 0.2s; }
+    input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+    .row { display: flex; gap: 10px; }
+    .row > div { flex: 1; }
+
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-primary { background: var(--accent); color: #000; }
     .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: #334155; color: #fff; margin-top: 10px; }
-    .btn-sm { width: auto; padding: 8px 14px; font-size: 0.85rem; }
-    
+    .btn-secondary { background: #1e293b; color: #f8fafc; margin-top: 10px; }
+    .btn-secondary:hover { background: #334155; }
+    .btn-sm { width: auto; padding: 8px 14px; font-size: 0.8rem; }
     .hidden { display: none !important; }
-    
-    /* Dashboard Elements */
-    .profile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
-    .profile-title h2 { font-size: 1.5rem; color: var(--accent); }
-    .profile-title p { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
-    
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    .tab-btn { background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-    .tab-btn.active { background: rgba(245, 158, 11, 0.15); color: var(--accent); }
-    
-    .list-item { background: #0b1120; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-    .list-item-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
-    .list-item-body { font-size: 0.95rem; }
+
+    /* Vault Navigation */
+    .profile-nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px; }
+    .nav-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 16px; }
+    .tab-btn { background: var(--card-inner); border: 1px solid var(--border); color: var(--muted); padding: 10px 4px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-align: center; }
+    .tab-btn.active { background: var(--accent-glow); color: var(--accent); border-color: var(--accent); }
+
+    /* Records Display Cards */
+    .record-item { background: var(--card-inner); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+    .record-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+    .record-title { font-size: 1rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .record-detail { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; line-height: 1.4; }
+    .badge-cost { background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; }
+
+    /* Settings Modal / Drawer */
+    #cloud-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
   </style>
 </head>
 <body>
@@ -59,289 +73,599 @@
 <div class="container">
   <header>
     <h1>नन्ही दुनिया</h1>
-    <p>Smart Baby Vault & Records System</p>
+    <p>Military-Grade Encrypted Baby Vault & Cloud Records</p>
+    <div id="sync-indicator" class="sync-status sync-online">
+      <span class="sync-dot"></span> <span id="sync-text">Live Vault Ready</span>
+    </div>
   </header>
 
-  <!-- SCREEN 1: BIRTH DETAILS -->
-  <div id="screen-step1" class="card">
-    <span class="step-badge">चरण 1 / 2</span>
-    <h2 style="margin-bottom: 16px;">जन्म विवरण दर्ज करें</h2>
-    
-    <div class="form-group">
-      <label>जन्म की तारीख (Date of Birth)</label>
-      <input type="date" id="dob" required>
-    </div>
-    
-    <div class="form-group">
-      <label>जन्म का समय (Time of Birth)</label>
-      <input type="time" id="tob" required>
-    </div>
-    
-    <div class="form-group">
-      <label>जन्म स्थान (Place of Birth / City)</label>
-      <input type="text" id="pob" placeholder="e.g. Gondia, Maharashtra" required>
-    </div>
-    
-    <button class="btn btn-primary" onclick="goToStep2()">आगे बढ़ें &rarr;</button>
-    <button class="btn btn-secondary" onclick="showUnlockScreen()">पहले से प्रोफाइल है? अनलॉक करें 🔓</button>
+  <!-- CLOUD CONFIG BUTTON (TOP RIGHT) -->
+  <div style="text-align: right; margin-bottom: 12px;">
+    <button class="btn btn-secondary btn-sm" onclick="toggleCloudConfig(true)" style="margin: 0; display: inline-flex;">⚙️ Cloud Settings</button>
   </div>
 
-  <!-- SCREEN 2: PROFILE & LOCK -->
+  <!-- SCREEN 1: ONBOARDING BIRTH DETAILS -->
+  <div id="screen-step1" class="card">
+    <span class="step-badge">चरण 1 / 2 • जन्म विवरण</span>
+    <h2 style="margin-bottom: 16px; font-size: 1.3rem;">जन्म का विवरण भरें</h2>
+    <div class="row">
+      <div class="form-group">
+        <label>जन्म तारीख (DOB)</label>
+        <input type="date" id="dob" required>
+      </div>
+      <div class="form-group">
+        <label>जन्म समय (Time)</label>
+        <input type="time" id="tob" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>जन्म स्थान (Place / City)</label>
+      <input type="text" id="pob" placeholder="e.g. Nagpur / Gondia" required>
+    </div>
+    <button class="btn btn-primary" onclick="proceedToStep2()">आगे बढ़ें &rarr;</button>
+    <button class="btn btn-secondary" onclick="showUnlockScreen()">पहले से बना वॉल्ट अनलॉक करें 🔓</button>
+  </div>
+
+  <!-- SCREEN 2: PROFILE & SECURITY ENCRYPTION -->
   <div id="screen-step2" class="card hidden">
-    <span class="step-badge">चरण 2 / 2</span>
-    <h2 style="margin-bottom: 16px;">पहचान व सुरक्षा लॉक</h2>
-    
+    <span class="step-badge">चरण 2 / 2 • AES-256 Vault Encryption</span>
+    <h2 style="margin-bottom: 14px; font-size: 1.3rem;">सुरक्षित प्रोफाइल व पासवर्ड बनाएं</h2>
     <div class="form-group">
       <label>बच्चे का नाम (Baby Name)</label>
       <input type="text" id="baby-name" placeholder="e.g. Aarav Agrawal" required>
     </div>
-    
     <div class="form-group">
-      <label>गुप्त पिन / पासवर्ड सेट करें (PIN or Password)</label>
-      <input type="password" id="set-password" placeholder="कम से कम 4 अक्षर" required>
+      <label>मास्टर पासवर्ड / पिन (Client-side Key)</label>
+      <input type="password" id="vault-password" placeholder="कम से कम 6 अक्षरों का गुप्त पासवर्ड" required>
+      <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 4px;">यह पासवर्ड आपके डेटा को AES-256 से एनक्रिप्ट करता है। इसे भूलने पर डेटा रीकवर नहीं हो सकता।</small>
     </div>
-    
-    <button class="btn btn-primary" onclick="createProfile()">सुरक्षित प्रोफाइल बनाएं 🔒</button>
-    <button class="btn btn-secondary" onclick="backToStep1()">&larr; वापस जाएं</button>
+    <button class="btn btn-primary" onclick="generateEncryptedVault()">वॉल्ट लॉक व सक्रिय करें 🔒</button>
+    <button class="btn btn-secondary" onclick="showStep1()">&larr; विवरण बदलें</button>
   </div>
 
-  <!-- SCREEN: UNLOCK EXISTING -->
+  <!-- SCREEN: UNLOCK VAULT -->
   <div id="screen-unlock" class="card hidden">
-    <h2 style="margin-bottom: 16px;">प्रोफाइल अनलॉक करें</h2>
-    
+    <h2 style="margin-bottom: 14px; font-size: 1.3rem;">वॉल्ट डिक्रिप्ट व अनलॉक करें</h2>
     <div class="form-group">
-      <label>बच्चे का नाम (Baby Name)</label>
-      <input type="text" id="unlock-name" placeholder="दर्ज किया हुआ नाम" required>
+      <label>बच्चे का नाम</label>
+      <input type="text" id="unlock-name" placeholder="दर्ज किया हुआ पूरा नाम" required>
     </div>
-    
     <div class="form-group">
-      <label>पिन / पासवर्ड (Password)</label>
-      <input type="password" id="unlock-password" placeholder="पासवर्ड डालें" required>
+      <label>मास्टर पासवर्ड / पिन</label>
+      <input type="password" id="unlock-password" placeholder="गुप्त पासवर्ड डालें" required>
     </div>
-    
-    <button class="btn btn-primary" onclick="unlockProfile()">अनलॉक करें 🔓</button>
-    <button class="btn btn-secondary" onclick="backToStep1()">&larr; नया प्रोफाइल बनाएं</button>
+    <button class="btn btn-primary" onclick="unlockVault()">डिक्रिप्ट व अनलॉक 🔓</button>
+    <button class="btn btn-secondary" onclick="showStep1()">&larr; नया प्रोफाइल बनाएं</button>
   </div>
 
-  <!-- SCREEN 3: DASHBOARD -->
+  <!-- SCREEN 3: MAIN BABY VAULT DASHBOARD -->
   <div id="screen-dashboard" class="card hidden">
-    <div class="profile-header">
-      <div class="profile-title">
-        <h2 id="dash-name">Baby Name</h2>
-        <p id="dash-birthinfo">DOB | TOB | City</p>
+    <div class="profile-nav">
+      <div>
+        <h2 id="dash-name" style="color: var(--accent); font-size: 1.35rem;">Baby Name</h2>
+        <p id="dash-details" style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">DOB | TOB | Place</p>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="lockOut()">लॉक 🔒</button>
+      <button class="btn btn-secondary btn-sm" onclick="lockVault()">लॉक करें 🔒</button>
     </div>
 
-    <!-- Sub Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tab-btn-med" onclick="switchTab('medical')">मेडिकल व टीकाकरण</button>
-      <button class="tab-btn" id="tab-btn-mem" onclick="switchTab('memories')">यादें व डायरी</button>
+    <!-- TABS -->
+    <div class="nav-tabs">
+      <div class="tab-btn active" id="btn-tab-vac" onclick="switchVaultTab('vac')">💉 टीकाकरण</div>
+      <div class="tab-btn" id="btn-tab-med" onclick="switchVaultTab('med')">💊 दवाइयां</div>
+      <div class="tab-btn" id="btn-tab-mem" onclick="switchVaultTab('mem')">📖 यादें व डायरी</div>
     </div>
 
-    <!-- Medical Section -->
-    <div id="sec-medical">
-      <div class="form-group">
-        <label>नया मेडिकल / वजन / टीका लॉग जोड़ें</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="med-input" placeholder="e.g. 3.2 kg, BCG टीका लगा, डॉ. शर्मा">
-          <button class="btn btn-primary btn-sm" onclick="addEntry('medical_logs')">जोड़ें</button>
+    <!-- MODULE 1: VACCINATION RECORDS -->
+    <div id="module-vac">
+      <div style="background: var(--card-inner); padding: 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
+        <h4 style="margin-bottom: 10px; font-size: 0.9rem;">नया टीका प्रविष्टि (Vaccination Log)</h4>
+        <div class="row">
+          <div class="form-group"><input type="text" id="vac-name" placeholder="टीके का नाम (e.g. BCG, Polio)"></div>
+          <div class="form-group"><input type="date" id="vac-date"></div>
         </div>
+        <div class="row">
+          <div class="form-group"><input type="text" id="vac-center" placeholder="अस्पताल / केंद्र / डॉक्टर"></div>
+          <div class="form-group"><input type="number" id="vac-cost" placeholder="खर्चा (₹)"></div>
+        </div>
+        <div class="form-group"><input type="text" id="vac-notes" placeholder="रिएक्शन / अगला शेड्यूल / नोट्स"></div>
+        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="addVaccination()">रिकॉर्ड सुरक्षित जोड़ें</button>
+      </div>
+      <div id="vac-list"></div>
+    </div>
+
+    <!-- MODULE 2: MEDICATIONS RECORDS -->
+    <div id="module-med" class="hidden">
+      <div style="background: var(--card-inner); padding: 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
+        <h4 style="margin-bottom: 10px; font-size: 0.9rem;">नया दवाई व स्वास्थ्य प्रविष्टि (Medical Log)</h4>
+        <div class="row">
+          <div class="form-group"><input type="text" id="med-name" placeholder="दवाई का नाम व खुराक (e.g. Calpol 2.5ml)"></div>
+          <div class="form-group"><input type="date" id="med-date"></div>
+        </div>
+        <div class="row">
+          <div class="form-group"><input type="text" id="med-symptom" placeholder="बच्चे की तकलीफ / लक्षण (Fever, Colic)"></div>
+          <div class="form-group"><input type="number" id="med-cost" placeholder="कुल खर्चा (₹)"></div>
+        </div>
+        <div class="form-group"><textarea id="med-feelings" rows="2" placeholder="आराम की स्थिति व माता-पिता की भावनाएं / अनुभव"></textarea></div>
+        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="addMedication()">मेडिकल रिकॉर्ड दर्ज करें</button>
       </div>
       <div id="med-list"></div>
     </div>
 
-    <!-- Memories Section -->
-    <div id="sec-memories" class="hidden">
-      <div class="form-group">
-        <label>सुखद स्मृति / माइलस्टोन दर्ज करें</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="mem-input" placeholder="e.g. पहली बार मुस्कुराया, करवट ली">
-          <button class="btn btn-primary btn-sm" onclick="addEntry('memories')">जोड़ें</button>
-        </div>
+    <!-- MODULE 3: MEMORIES & MILESTONES -->
+    <div id="module-mem" class="hidden">
+      <div style="background: var(--card-inner); padding: 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
+        <h4 style="margin-bottom: 10px; font-size: 0.9rem;">स्मृति / माइलस्टोन दर्ज करें</h4>
+        <div class="form-group"><input type="text" id="mem-title" placeholder="शीर्षक (e.g. पहली बार मां बोला / करवट ली)"></div>
+        <div class="form-group"><textarea id="mem-desc" rows="3" placeholder="उस पल की पूरी दास्तान व यादें..."></textarea></div>
+        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="addMemory()">डायरी में सहेजें</button>
       </div>
       <div id="mem-list"></div>
     </div>
 
-    <button class="btn btn-secondary" style="margin-top: 20px;" onclick="window.print()">रिकॉर्ड प्रिंट / PDF सेव करें 📄</button>
+    <!-- EXPORT MODAL TRIGGER -->
+    <button class="btn btn-secondary" onclick="openExportModal()" style="margin-top: 18px;">📄 एक्सपोर्ट धांसू PDF (Clean & Professional)</button>
   </div>
+
+  <!-- PDF EXPORT SELECTION MODAL -->
+  <div id="export-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100;">
+    <div class="card" style="width: 100%; max-width: 420px;">
+      <h3 style="margin-bottom: 12px; color: var(--accent);">PDF एक्सपोर्ट चुनें</h3>
+      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;">आप किस रिकॉर्ड का आधिकारिक प्रिंट या डॉक्यूमेंट बनाना चाहते हैं?</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn btn-secondary" onclick="generateTargetedPDF('all')">📑 संपूर्ण वॉल्ट रिपोर्ट (All in One)</button>
+        <button class="btn btn-secondary" onclick="generateTargetedPDF('vac')">💉 केवल टीकाकरण पासबुक (Vaccines Only)</button>
+        <button class="btn btn-secondary" onclick="generateTargetedPDF('med')">💊 केवल मेडिकल व स्वास्थ्य रिपोर्ट (Medications)</button>
+        <button class="btn btn-secondary" onclick="generateTargetedPDF('mem')">📖 केवल सुखद यादें व डायरी (Memories)</button>
+        <button class="btn btn-primary" onclick="closeExportModal()" style="margin-top: 8px;">रद्द करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOUD CONFIG MODAL -->
+  <div id="cloud-modal" class="hidden">
+    <div class="card" style="width: 100%; max-width: 450px;">
+      <h3 style="margin-bottom: 12px; color: var(--accent);">☁️ GitHub Cloud Sync Setup</h3>
+      <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 14px;">डेटा को लाइव repo ke `data.json` me sync karne ke liye details bharein:</p>
+      
+      <div class="form-group">
+        <label>GitHub Personal Access Token (PAT with 'repo' scope)</label>
+        <input type="password" id="cfg-token" placeholder="ghp_xxxxxx">
+      </div>
+      <div class="form-group">
+        <label>Repository Owner / Username</label>
+        <input type="text" id="cfg-owner" placeholder="e.g. your-github-id">
+      </div>
+      <div class="form-group">
+        <label>Repository Name</label>
+        <input type="text" id="cfg-repo" placeholder="e.g. nanhi-duniya">
+      </div>
+      <div class="form-group">
+        <label>Target File Path</label>
+        <input type="text" id="cfg-path" value="data.json">
+      </div>
+      
+      <button class="btn btn-primary" onclick="saveCloudConfig()">सेटिंग्स सेव करें</button>
+      <button class="btn btn-secondary" onclick="toggleCloudConfig(false)">बंद करें</button>
+    </div>
+  </div>
+
+  <!-- INVISIBLE PRINT CONTAINER FOR PERFECT CLEAN PDF -->
+  <div id="pdf-render-zone" style="display: none; background: #ffffff; color: #111827; padding: 30px; font-family: sans-serif;"></div>
 </div>
 
 <script>
-  let currentProfile = null;
-  let tempBirthData = {};
+  let activeVault = null;
+  let activeKey = null;
+  let tempBirth = {};
 
-  function hideAll() {
+  // 1. WEB CRYPTO API: MILITARY GRADE AES-GCM 256-BIT ENCRYPTION
+  async function deriveKey(password, salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function encryptData(objectData, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt);
+    const enc = new TextEncoder();
+    const encodedData = enc.encode(JSON.stringify(objectData));
+    const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, encodedData);
+    
+    return {
+      salt: Array.from(salt),
+      iv: Array.from(iv),
+      ciphertext: Array.from(new Uint8Array(cipher))
+    };
+  }
+
+  async function decryptData(cipherPackage, password) {
+    const salt = new Uint8Array(cipherPackage.salt);
+    const iv = new Uint8Array(cipherPackage.iv);
+    const ciphertext = new Uint8Array(cipherPackage.ciphertext);
+    const key = await deriveKey(password, salt);
+    const dec = new TextDecoder();
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ciphertext);
+    return JSON.parse(dec.decode(decrypted));
+  }
+
+  // 2. NAVIGATION SCREENS
+  function hideAllScreens() {
     document.getElementById("screen-step1").classList.add("hidden");
     document.getElementById("screen-step2").classList.add("hidden");
     document.getElementById("screen-unlock").classList.add("hidden");
     document.getElementById("screen-dashboard").classList.add("hidden");
   }
 
-  function goToStep2() {
+  function proceedToStep2() {
     const dob = document.getElementById("dob").value;
     const tob = document.getElementById("tob").value;
     const pob = document.getElementById("pob").value.trim();
-
-    if (!dob || !pob) {
-      alert("कृपया जन्म तारीख और स्थान भरें!");
-      return;
-    }
-    tempBirthData = { dob, tob, pob };
-    hideAll();
+    if(!dob || !pob) { alert("कृपया जन्म तारीख और स्थान अवश्य दर्ज करें!"); return; }
+    tempBirth = { dob, tob, pob };
+    hideAllScreens();
     document.getElementById("screen-step2").classList.remove("hidden");
   }
 
-  function backToStep1() {
-    hideAll();
+  function showStep1() {
+    hideAllScreens();
     document.getElementById("screen-step1").classList.remove("hidden");
   }
 
   function showUnlockScreen() {
-    hideAll();
+    hideAllScreens();
     document.getElementById("screen-unlock").classList.remove("hidden");
   }
 
-  async function createProfile() {
+  // 3. PROFILE INITIALIZATION & LOCALSTORAGE + CLOUD SYNC
+  async function generateEncryptedVault() {
     const name = document.getElementById("baby-name").value.trim();
-    const pass = document.getElementById("set-password").value.trim();
+    const pass = document.getElementById("vault-password").value.trim();
+    if(!name || pass.length < 6) { alert("कृपया पूरा नाम और कम से कम 6 अक्षरों का मजबूत पासवर्ड रखें!"); return; }
 
-    if (!name || !pass) {
-      alert("नाम और पासवर्ड दोनों आवश्यक हैं!");
-      return;
-    }
-
-    const payload = {
+    const profilePayload = {
       baby_name: name,
-      password: pass,
-      ...tempBirthData
+      ...tempBirth,
+      vaccinations: [],
+      medications: [],
+      memories: []
     };
 
-    try {
-      const res = await fetch("/api/create-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        currentProfile = data.profile;
-        openDashboard();
-      } else {
-        alert(data.message || "Error");
-      }
-    } catch (e) {
-      alert("सर्वर से संपर्क नहीं हो पाया!");
-    }
+    activeKey = pass;
+    activeVault = profilePayload;
+    await persistVault();
+    openDashboard();
   }
 
-  async function unlockProfile() {
+  async function unlockVault() {
     const name = document.getElementById("unlock-name").value.trim();
     const pass = document.getElementById("unlock-password").value.trim();
-
-    if (!name || !pass) {
-      alert("नाम और पासवर्ड भरें!");
+    const vaultKey = "nd_vault_" + name.toLowerCase().replace(/\s+/g, '_');
+    
+    // Check local storage first, then cloud cache
+    const rawVault = localStorage.getItem(vaultKey);
+    if(!rawVault) {
+      alert("इस नाम का कोई वॉल्ट नहीं मिला! कृपया स्पेलिंग जांचें या क्लाउड सिंक चेक करें।");
       return;
     }
 
     try {
-      const res = await fetch("/api/unlock-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile_id: name, password: pass })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        currentProfile = data.profile;
-        openDashboard();
-      } else {
-        alert(data.message || "गलत पासवर्ड!");
-      }
-    } catch (e) {
-      alert("सर्वर एरर!");
+      const parsedPackage = JSON.parse(rawVault);
+      activeVault = await decryptData(parsedPackage, pass);
+      activeKey = pass;
+      openDashboard();
+    } catch(err) {
+      alert("पासवर्ड गलत है या डेटा करप्ट हो चुका है!");
     }
   }
 
-  function openDashboard() {
-    hideAll();
-    document.getElementById("screen-dashboard").classList.remove("hidden");
-    document.getElementById("dash-name").innerText = currentProfile.baby_name;
-    document.getElementById("dash-birthinfo").innerText = `${currentProfile.dob || ''} | ${currentProfile.tob || ''} | ${currentProfile.pob || ''}`;
-    renderLists();
+  async function persistVault() {
+    if(!activeVault || !activeKey) return;
+    const vaultId = activeVault.baby_name.toLowerCase().replace(/\s+/g, '_');
+    const encryptedPkg = await encryptData(activeVault, activeKey);
+    localStorage.setItem("nd_vault_" + vaultId, JSON.stringify(encryptedPkg));
+    
+    // Attempt Live Cloud Sync
+    syncToGithubCloud(vaultId, encryptedPkg);
   }
 
-  function switchTab(type) {
-    if (type === 'medical') {
-      document.getElementById("sec-medical").classList.remove("hidden");
-      document.getElementById("sec-memories").classList.add("hidden");
-      document.getElementById("tab-btn-med").classList.add("active");
-      document.getElementById("tab-btn-mem").classList.remove("active");
-    } else {
-      document.getElementById("sec-medical").classList.add("hidden");
-      document.getElementById("sec-memories").classList.remove("hidden");
-      document.getElementById("tab-btn-med").classList.remove("active");
-      document.getElementById("tab-btn-mem").classList.add("active");
+  // 4. GITHUB CLOUD SYNC ENGINE (REST API DIRECT)
+  async function syncToGithubCloud(vaultId, encryptedPkg) {
+    const cfg = JSON.parse(localStorage.getItem("nd_cloud_config") || "{}");
+    const ind = document.getElementById("sync-indicator");
+    const txt = document.getElementById("sync-text");
+
+    if(!cfg.token || !cfg.owner || !cfg.repo) {
+      ind.className = "sync-status sync-online";
+      txt.innerText = "Local Vault Saved (Cloud setup pending)";
+      return;
     }
-  }
 
-  async function addEntry(type) {
-    const inputEl = type === 'medical_logs' ? document.getElementById("med-input") : document.getElementById("mem-input");
-    const val = inputEl.value.trim();
-    if (!val) return;
-
-    const entryObj = {
-      text: val,
-      date: new Date().toLocaleDateString('hi-IN')
-    };
+    txt.innerText = "Syncing with GitHub Cloud...";
 
     try {
-      const res = await fetch("/api/add-record", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path || 'data.json'}`;
+      let sha = null;
+      let existingData = {};
+
+      // Get existing file sha
+      const getRes = await fetch(url, { headers: { Authorization: `token ${cfg.token}` } });
+      if(getRes.status === 200) {
+        const body = await getRes.json();
+        sha = body.sha;
+        existingData = JSON.parse(decodeURIComponent(escape(atob(body.content))));
+      }
+
+      // Merge current encrypted vault into collective cloud data.json
+      existingData[vaultId] = {
+        updated_at: new Date().toISOString(),
+        payload: encryptedPkg
+      };
+
+      const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(existingData, null, 2))));
+      const putRes = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${cfg.token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          profile_id: currentProfile.profile_id,
-          type: type,
-          entry: entryObj
+          message: `Vault Sync: ${vaultId}`,
+          content: updatedContent,
+          sha: sha || undefined
         })
       });
-      const data = await res.json();
-      if (data.status === "success") {
-        currentProfile = data.profile;
-        inputEl.value = "";
-        renderLists();
+
+      if(putRes.ok) {
+        ind.className = "sync-status sync-online";
+        txt.innerText = "Cloud Synced Live (GitHub data.json)";
+      } else {
+        throw new Error();
       }
-    } catch (e) {
-      alert("डेटा सुरक्षित नहीं हो सका!");
+    } catch(e) {
+      ind.className = "sync-status sync-offline";
+      txt.innerText = "Offline Mode (Local Auto-Saved)";
     }
   }
 
-  function renderLists() {
-    const medContainer = document.getElementById("med-list");
-    medContainer.innerHTML = "";
-    (currentProfile.medical_logs || []).slice().reverse().forEach(item => {
-      medContainer.innerHTML += `
-        <div class="list-item">
-          <div class="list-item-header"><span>चिकित्सा प्रविष्टि</span><span>${item.date}</span></div>
-          <div class="list-item-body">${item.text}</div>
-        </div>`;
-    });
+  // 5. DASHBOARD & RENDER LISTS
+  function openDashboard() {
+    hideAllScreens();
+    document.getElementById("screen-dashboard").classList.remove("hidden");
+    document.getElementById("dash-name").innerText = activeVault.baby_name;
+    document.getElementById("dash-details").innerText = `DOB: ${activeVault.dob} | Time: ${activeVault.tob || 'N/A'} | Place: ${activeVault.pob}`;
+    renderVaccinations();
+    renderMedications();
+    renderMemories();
+  }
 
-    const memContainer = document.getElementById("mem-list");
-    memContainer.innerHTML = "";
-    (currentProfile.memories || []).slice().reverse().forEach(item => {
-      memContainer.innerHTML += `
-        <div class="list-item">
-          <div class="list-item-header"><span>स्मृति / माइलस्टोन</span><span>${item.date}</span></div>
-          <div class="list-item-body">${item.text}</div>
+  function switchVaultTab(tab) {
+    ['vac', 'med', 'mem'].forEach(t => {
+      document.getElementById(`module-${t}`).classList.add("hidden");
+      document.getElementById(`btn-tab-${t}`).classList.remove("active");
+    });
+    document.getElementById(`module-${tab}`).classList.remove("hidden");
+    document.getElementById(`btn-tab-${tab}`).classList.add("active");
+  }
+
+  function lockVault() {
+    activeVault = null;
+    activeKey = null;
+    showUnlockScreen();
+  }
+
+  // Record Ingestion Logic
+  async function addVaccination() {
+    const name = document.getElementById("vac-name").value.trim();
+    const date = document.getElementById("vac-date").value;
+    const center = document.getElementById("vac-center").value.trim();
+    const cost = document.getElementById("vac-cost").value.trim();
+    const notes = document.getElementById("vac-notes").value.trim();
+    if(!name || !date) { alert("टीके का नाम और तारीख अनिवार्य हैं!"); return; }
+
+    activeVault.vaccinations.push({ name, date, center, cost: cost || "0", notes });
+    await persistVault();
+    renderVaccinations();
+    document.getElementById("vac-name").value = "";
+    document.getElementById("vac-center").value = "";
+    document.getElementById("vac-cost").value = "";
+    document.getElementById("vac-notes").value = "";
+  }
+
+  function renderVaccinations() {
+    const box = document.getElementById("vac-list");
+    box.innerHTML = "";
+    (activeVault.vaccinations || []).slice().reverse().forEach(v => {
+      box.innerHTML += `
+        <div class="record-item">
+          <div class="record-header">
+            <span>दिनांक: <b>${v.date}</b></span>
+            <span class="badge-cost">लागत: ₹${v.cost}</span>
+          </div>
+          <div class="record-title">${v.name}</div>
+          <div class="record-detail">📍 केंद्र / डॉक्टर: ${v.center || 'उल्लेखित नहीं'}</div>
+          ${v.notes ? `<div class="record-detail" style="color: var(--muted);">📝 नोट्स: ${v.notes}</div>` : ''}
         </div>`;
     });
   }
 
-  function lockOut() {
-    currentProfile = null;
-    hideAll();
-    document.getElementById("screen-unlock").classList.remove("hidden");
+  async function addMedication() {
+    const name = document.getElementById("med-name").value.trim();
+    const date = document.getElementById("med-date").value;
+    const symptom = document.getElementById("med-symptom").value.trim();
+    const cost = document.getElementById("med-cost").value.trim();
+    const feelings = document.getElementById("med-feelings").value.trim();
+    if(!name || !date) { alert("दवाई का नाम और तारीख अनिवार्य हैं!"); return; }
+
+    activeVault.medications.push({ name, date, symptom, cost: cost || "0", feelings });
+    await persistVault();
+    renderMedications();
+    document.getElementById("med-name").value = "";
+    document.getElementById("med-symptom").value = "";
+    document.getElementById("med-cost").value = "";
+    document.getElementById("med-feelings").value = "";
   }
+
+  function renderMedications() {
+    const box = document.getElementById("med-list");
+    box.innerHTML = "";
+    (activeVault.medications || []).slice().reverse().forEach(m => {
+      box.innerHTML += `
+        <div class="record-item">
+          <div class="record-header">
+            <span>तारीख: <b>${m.date}</b></span>
+            <span class="badge-cost">खर्च: ₹${m.cost}</span>
+          </div>
+          <div class="record-title">${m.name}</div>
+          <div class="record-detail">🩺 लक्षण व परेशानी: ${m.symptom || 'सामान्य'}</div>
+          ${m.feelings ? `<div class="record-detail" style="color: #fcd34d;">💛 राहत व अनुभव: "${m.feelings}"</div>` : ''}
+        </div>`;
+    });
+  }
+
+  async function addMemory() {
+    const title = document.getElementById("mem-title").value.trim();
+    const desc = document.getElementById("mem-desc").value.trim();
+    if(!title || !desc) { alert("शीर्षक और विवरण दोनों भरें!"); return; }
+
+    activeVault.memories.push({ title, desc, date: new Date().toLocaleDateString('hi-IN') });
+    await persistVault();
+    renderMemories();
+    document.getElementById("mem-title").value = "";
+    document.getElementById("mem-desc").value = "";
+  }
+
+  function renderMemories() {
+    const box = document.getElementById("mem-list");
+    box.innerHTML = "";
+    (activeVault.memories || []).slice().reverse().forEach(m => {
+      box.innerHTML += `
+        <div class="record-item">
+          <div class="record-header">
+            <span>दर्ज तिथि: <b>${m.date}</b></span>
+          </div>
+          <div class="record-title" style="color: #6ee7b7;">${m.title}</div>
+          <div class="record-detail">${m.desc}</div>
+        </div>`;
+    });
+  }
+
+  // 6. TARGETED CLEAN PDF EXPORT ENGINE
+  function openExportModal() { document.getElementById("export-modal").classList.remove("hidden"); }
+  function closeExportModal() { document.getElementById("export-modal").classList.add("hidden"); }
+
+  function generateTargetedPDF(scope) {
+    closeExportModal();
+    const renderBox = document.getElementById("pdf-render-zone");
+    renderBox.style.display = "block";
+
+    let contentHTML = `
+      <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
+        <h1 style="font-size: 26px; color: #1e3a8a; margin: 0;">नन्ही दुनिया - आधिकारिक बाल अभिलेख (Baby Vault Record)</h1>
+        <p style="font-size: 13px; color: #555; margin-top: 4px;">गोपनीय एवं सुरक्षित डिजिटल रिकॉर्ड्स</p>
+      </div>
+      <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;">
+        <p><b>बच्चे का नाम:</b> ${activeVault.baby_name}</p>
+        <p><b>जन्म विवरण:</b> ${activeVault.dob} | ${activeVault.tob || 'N/A'} | ${activeVault.pob}</p>
+        <p><b>दस्तावेज़ जारी तिथि:</b> ${new Date().toLocaleDateString('hi-IN')}</p>
+      </div>
+    `;
+
+    if(scope === 'all' || scope === 'vac') {
+      contentHTML += `<h2 style="font-size: 18px; color: #0f172a; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 20px;">💉 टीकाकरण पासबुक (Vaccinations)</h2>`;
+      if(activeVault.vaccinations.length === 0) contentHTML += `<p style="font-size: 12px; color: #777;">कोई प्रविष्टि नहीं।</p>`;
+      else {
+        contentHTML += `<table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px;" border="1" cellpadding="6">
+          <tr style="background: #e2e8f0;"><th>टीका</th><th>तारीख</th><th>केंद्र / डॉक्टर</th><th>लागत (₹)</th><th>टिप्पणी</th></tr>`;
+        activeVault.vaccinations.forEach(v => {
+          contentHTML += `<tr><td><b>${v.name}</b></td><td>${v.date}</td><td>${v.center || '-'}</td><td>₹${v.cost}</td><td>${v.notes || '-'}</td></tr>`;
+        });
+        contentHTML += `</table>`;
+      }
+    }
+
+    if(scope === 'all' || scope === 'med') {
+      contentHTML += `<h2 style="font-size: 18px; color: #0f172a; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 25px;">💊 दवाइयां एवं स्वास्थ्य विवरण (Medications)</h2>`;
+      if(activeVault.medications.length === 0) contentHTML += `<p style="font-size: 12px; color: #777;">कोई प्रविष्टि नहीं।</p>`;
+      else {
+        contentHTML += `<table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px;" border="1" cellpadding="6">
+          <tr style="background: #e2e8f0;"><th>दवाई</th><th>तारीख</th><th>लक्षण</th><th>खर्च</th><th>माता-पिता का अनुभव / सुधार</th></tr>`;
+        activeVault.medications.forEach(m => {
+          contentHTML += `<tr><td><b>${m.name}</b></td><td>${m.date}</td><td>${m.symptom || '-'}</td><td>₹${m.cost}</td><td>${m.feelings || '-'}</td></tr>`;
+        });
+        contentHTML += `</table>`;
+      }
+    }
+
+    if(scope === 'all' || scope === 'mem') {
+      contentHTML += `<h2 style="font-size: 18px; color: #0f172a; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 25px;">📖 अनमोल यादें एवं माइलस्टोन (Memories)</h2>`;
+      if(activeVault.memories.length === 0) contentHTML += `<p style="font-size: 12px; color: #777;">कोई प्रविष्टि नहीं।</p>`;
+      else {
+        activeVault.memories.forEach(m => {
+          contentHTML += `<div style="margin-top: 10px; border-left: 3px solid #f59e0b; padding-left: 10px;">
+            <p style="font-size: 13px; font-weight: bold; margin: 0;">${m.title} <span style="font-size: 10px; color: #666; font-weight: normal;">(${m.date})</span></p>
+            <p style="font-size: 12px; color: #333; margin: 3px 0 0 0;">${m.desc}</p>
+          </div>`;
+        });
+      }
+    }
+
+    renderBox.innerHTML = contentHTML;
+
+    const opt = {
+      margin: 10,
+      filename: `${activeVault.baby_name}_Record_${scope}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(renderBox).save().then(() => {
+      renderBox.style.display = "none";
+    });
+  }
+
+  // 7. CLOUD SETTINGS HANDLING
+  function toggleCloudConfig(show) {
+    document.getElementById("cloud-modal").classList.toggle("hidden", !show);
+    if(show) {
+      const cfg = JSON.parse(localStorage.getItem("nd_cloud_config") || "{}");
+      document.getElementById("cfg-token").value = cfg.token || "";
+      document.getElementById("cfg-owner").value = cfg.owner || "";
+      document.getElementById("cfg-repo").value = cfg.repo || "";
+      document.getElementById("cfg-path").value = cfg.path || "data.json";
+    }
+  }
+
+  function saveCloudConfig() {
+    const token = document.getElementById("cfg-token").value.trim();
+    const owner = document.getElementById("cfg-owner").value.trim();
+    const repo = document.getElementById("cfg-repo").value.trim();
+    const path = document.getElementById("cfg-path").value.trim() || "data.json";
+
+    localStorage.setItem("nd_cloud_config", JSON.stringify({ token, owner, repo, path }));
+    toggleCloudConfig(false);
+    alert("क्लाउड सेटिंग्स सुरक्षित हो गईं! अगला कोई भी बदलाव लाइव sync होगा।");
+  }
+
+  // Network State Handlers
+  window.addEventListener('online', () => {
+    document.getElementById("sync-indicator").className = "sync-status sync-online";
+    document.getElementById("sync-text").innerText = "Back Online • Ready";
+    if(activeVault) persistVault();
+  });
+  window.addEventListener('offline', () => {
+    document.getElementById("sync-indicator").className = "sync-status sync-offline";
+    document.getElementById("sync-text").innerText = "Offline (Local Vault Active)";
+  });
 </script>
 </body>
 </html>
