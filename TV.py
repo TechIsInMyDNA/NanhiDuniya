@@ -74,34 +74,38 @@ def decrypt_payload(passphrase: str, ciphertext_b64: str, nonce_b64: str, salt_b
     except Exception:
         return None
 
-def register_or_login_profile(baby_name: str, passphrase: str, meta_data: dict = None):
+def register_profile(baby_name: str, passphrase: str, meta_data: dict):
+    init_db()
+    prof_hash = generate_profile_hash(baby_name, passphrase)
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    c_text, nonce, salt = encrypt_payload(passphrase, meta_data)
+    c.execute('''
+        INSERT OR REPLACE INTO baby_profiles (profile_hash, enc_profile_meta, meta_nonce, meta_salt)
+        VALUES (?, ?, ?, ?)
+    ''', (prof_hash, c_text, nonce, salt))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "profile_hash": prof_hash, "meta": meta_data}
+
+def login_profile(baby_name: str, passphrase: str):
     init_db()
     prof_hash = generate_profile_hash(baby_name, passphrase)
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT enc_profile_meta, meta_nonce, meta_salt FROM baby_profiles WHERE profile_hash = ?", (prof_hash,))
     row = c.fetchone()
+    conn.close()
 
-    if row:
-        meta = decrypt_payload(passphrase, row[0], row[1], row[2])
-        conn.close()
-        if meta is None:
-            return {"status": "error", "message": "Galat password ya baby name"}
-        return {"status": "ok", "profile_hash": prof_hash, "meta": meta, "is_new": False}
-    else:
-        if not meta_data:
-            meta_data = {
-                "baby_name": baby_name,
-                "created_at": datetime.datetime.now().isoformat()
-            }
-        c_text, nonce, salt = encrypt_payload(passphrase, meta_data)
-        c.execute('''
-            INSERT INTO baby_profiles (profile_hash, enc_profile_meta, meta_nonce, meta_salt)
-            VALUES (?, ?, ?, ?)
-        ''', (prof_hash, c_text, nonce, salt))
-        conn.commit()
-        conn.close()
-        return {"status": "ok", "profile_hash": prof_hash, "meta": meta_data, "is_new": True}
+    if not row:
+        return {"status": "error", "message": "No profile found! This profile does not exist or was permanently deleted."}
+
+    meta = decrypt_payload(passphrase, row[0], row[1], row[2])
+    if meta is None:
+        return {"status": "error", "message": "Incorrect Master Password!"}
+
+    return {"status": "ok", "profile_hash": prof_hash, "meta": meta}
 
 def add_profile_milestone(prof_hash: str, passphrase: str, event_tag: str, details: dict):
     init_db()
@@ -149,12 +153,11 @@ def edit_profile_milestone(prof_hash: str, passphrase: str, milestone_id: int, n
     row = c.fetchone()
     if not row:
         conn.close()
-        return {"status": "error", "message": "Record nahi mila"}
+        return {"status": "error", "message": "Record not found"}
 
-    # Verify key decrypts existing record
     if decrypt_payload(passphrase, row[0], row[1], row[2]) is None:
         conn.close()
-        return {"status": "error", "message": "Galat password! Edit unauthorized"}
+        return {"status": "error", "message": "Incorrect Master Password! Edit unauthorized."}
 
     c_text, nonce, salt = encrypt_payload(passphrase, new_details)
     c.execute('''
@@ -222,12 +225,12 @@ def delete_profile_vault(prof_hash: str, passphrase: str):
     row = c.fetchone()
     if not row:
         conn.close()
-        return {"status": "error", "message": "Profile nahi mili"}
+        return {"status": "error", "message": "Profile not found"}
 
     meta = decrypt_payload(passphrase, row[0], row[1], row[2])
     if meta is None:
         conn.close()
-        return {"status": "error", "message": "Galat password! Delete unauthorized"}
+        return {"status": "error", "message": "Incorrect Master Password! Deletion unauthorized."}
 
     c.execute("DELETE FROM baby_profiles WHERE profile_hash = ?", (prof_hash,))
     c.execute("DELETE FROM milestones WHERE profile_hash = ?", (prof_hash,))
