@@ -8,5 +8,15 @@
     "vaccinations": [],
     "medications": [],
     "memories": []
+  },
+  "shubham": {
+    "name": "Shubham",
+    "dob": "1998-04-14",
+    "tob": "11:05",
+    "pob": "Gondia",
+    "password": "Shubham",
+    "vaccinations": [],
+    "medications": [],
+    "memories": []
   }
 }
