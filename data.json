@@ -38,5 +38,15 @@
     "vaccinations": [],
     "medications": [],
     "memories": []
+  },
+  "vaidhik_sankalp_agrawal": {
+    "name": "Vaidhik Sankalp Agrawal",
+    "dob": "2024-10-21",
+    "tob": "08:29",
+    "pob": "Gondia, Maharashtra",
+    "password": "Monika.22",
+    "vaccinations": [],
+    "medications": [],
+    "memories": []
   }
 }
