@@ -283,8 +283,10 @@
     owner: "TechIsInMyDNA",
     repo: "NanhiDuniya",
     path: "data.json",
-    t1: "ghp_yaXkzS6pvUHe4t",   // Split token first half
-    t2: "cHHG2p304vWGUNtS1rbpfO"       // Split token second half
+    branch: "data-storage",       // Dedicated storage branch to stop Pages redeployments
+    sourceBranch: "main",         // Fallback source branch to fork storage branch
+    t1: "ghp_yaXkzS6pvUHe4t",     // Split token first half
+    t2: "cHHG2p304vWGUNtS1rbpfO"  // Split token second half
   };
 
   function getActiveToken() {
@@ -297,6 +299,7 @@
 
   window.addEventListener("DOMContentLoaded", async () => {
     loadLocalStore();
+    await ensureDataBranchExists();
     await fetchCloudData();
   });
 
@@ -311,6 +314,43 @@
     localStorage.setItem("nd_master_data", JSON.stringify(allVaults));
   }
 
+  // AUTO CREATE STORAGE BRANCH IF MISSING
+  async function ensureDataBranchExists() {
+    const token = getActiveToken();
+    if (token.includes("PASTE")) return;
+
+    try {
+      // 1. Check if data-storage branch exists
+      const checkRes = await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/branches/${REPO_CONFIG.branch}`, {
+        headers: { Authorization: `token ${token}` }
+      });
+
+      if (checkRes.status === 404) {
+        // 2. Fetch latest commit SHA from main branch
+        const mainRes = await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/git/refs/heads/${REPO_CONFIG.sourceBranch}`, {
+          headers: { Authorization: `token ${token}` }
+        });
+        
+        if (mainRes.ok) {
+          const mainRef = await mainRes.json();
+          const sha = mainRef.object.sha;
+
+          // 3. Create data-storage branch referencing the commit SHA
+          await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/git/refs`, {
+            method: "POST",
+            headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ref: `refs/heads/${REPO_CONFIG.branch}`,
+              sha: sha
+            })
+          });
+        }
+      }
+    } catch(e) {
+      console.warn("Branch check bypassed:", e);
+    }
+  }
+
   // GITHUB LIVE SYNC ENGINE
   async function fetchCloudData() {
     const dot = document.getElementById("sync-dot");
@@ -323,9 +363,18 @@
     }
 
     try {
-      const res = await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.path}`, {
+      // Fetch directly from data-storage branch
+      let res = await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.path}?ref=${REPO_CONFIG.branch}`, {
         headers: { Authorization: `token ${token}` }
       });
+
+      // Fallback: Check source branch if file was created there initially
+      if (res.status === 404) {
+        res = await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.path}?ref=${REPO_CONFIG.sourceBranch}`, {
+          headers: { Authorization: `token ${token}` }
+        });
+      }
+
       if (res.ok) {
         const json = await res.json();
         const content = JSON.parse(decodeURIComponent(escape(atob(json.content))));
@@ -335,7 +384,7 @@
         status.innerText = "Cloud Synced";
       } else {
         dot.style.background = "#f59e0b";
-        status.innerText = "Local (Repo Pending)";
+        status.innerText = "Local (Ready to Init)";
       }
     } catch(e) {
       dot.style.background = "#ef4444";
@@ -352,7 +401,8 @@
     status.innerText = "Syncing...";
 
     try {
-      const url = `https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.path}`;
+      // Get SHA from the dedicated storage branch
+      const url = `https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.path}?ref=${REPO_CONFIG.branch}`;
       let sha = null;
       const checkRes = await fetch(url, { headers: { Authorization: `token ${token}` } });
       if (checkRes.ok) {
@@ -361,12 +411,13 @@
       }
 
       const updatedBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(allVaults, null, 2))));
-      const pushRes = await fetch(url, {
+      const pushRes = await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.path}`, {
         method: "PUT",
         headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           message: `Vault Sync: ${new Date().toISOString()}`,
           content: updatedBase64,
+          branch: REPO_CONFIG.branch,
           sha: sha || undefined
         })
       });
